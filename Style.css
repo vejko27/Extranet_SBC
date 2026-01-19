@@ -1,0 +1,90 @@
+/*reseto básico*/
+
+*{
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+
+body, html {
+    height: 100%;
+    font-family: 'Segoe UI', Verdana, sans-serif;
+}
+
+/* Fondo con imagen de camiones*/
+
+.login-container{
+    background: url(Img/sbc_Fondo.png) no-repeat center center;
+    background-size: cover;
+    position: relative;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+}
+
+/*Capa oscura para contraste*/
+.overlay{
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: auto;
+    background-color: rgba(0, 60, 30, 0.6);
+    z-index: 1;
+}
+
+/*Formulario*/
+.login-form{
+    position: relative;
+    z-index: 2;
+    background-color: white;
+    padding: 40px;
+    border-radius: 8px;
+    width: 100%;
+    max-width: 400px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+    text-align: center;
+}
+
+.login-form h1{
+    color: #007a3d;
+    margin-bottom: 10px;
+}
+
+.login-form h2{
+    font-size: 18px;
+    color: #333#;
+}
+
+.login-form p{
+    margin-bottom: 20px;
+    color: #666#;
+}
+
+.login-form label{
+    display: block;
+    text-align: left;
+    margin: 10px 0 5px;
+    font-weight: bold;
+    color: #333;
+}
+
+.login-form input{
+    width: 100%;
+    padding: 12px;
+    background-color:azure;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.login-form button:hover{
+    background-color: #005f2e;
+}
+
