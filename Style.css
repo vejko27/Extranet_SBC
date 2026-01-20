@@ -95,6 +95,7 @@ body, html {
     gap: 5;
     text-align: center;
     justify-content: center;
+    font-weight: bold;
     padding: 12px 24px;
     background-color:white;
     cursor: pointer;
