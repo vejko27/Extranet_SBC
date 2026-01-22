@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/x-icon" href="logo/SBC_TRANSPORT.jpg">
+    <title>Menu Paralelo</title>
+    <style>
+        :root{
+            --sidebar-w: 260px;
+            --bg: #f5f7fb;
+            --accent: #0078d4;
+            --text: #222;
+        }
+        *{box-sizing:border-box}
+        body{margin:0;font-family:Segoe UI, Roboto, Arial, sans-serif;background:var(--bg);color:var(--text);}
+
+        /* Sidebar */
+        .sidebar{
+            position:fixed; left:0; top:0; bottom:0;
+            width:var(--sidebar-w);
+            background:#fff; border-right:1px solid rgba(0,0,0,.06);
+            padding:20px; overflow:auto;
+        }
+        .brand{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+        .brand img{width:36px;height:36px;border-radius:6px}
+        .brand h1{font-size:1rem;margin:0}
+
+        nav ul{list-style:none;padding:0;margin:0}
+        nav li{margin:6px 0}
+        nav a{
+            display:flex;align-items:center;gap:10px;
+            text-decoration:none;color:var(--text);
+            padding:10px 12px;border-radius:6px;
+        }
+        nav a:hover{background:rgba(0,0,0,.04)}
+        nav a.active{background:linear-gradient(90deg,var(--accent),#2aa1ff);color:#fff}
+
+        /* Content */
+        .content{margin-left:var(--sidebar-w);padding:28px;min-height:100vh}
+
+        /* Topbar (mobile) */
+        .topbar{display:none;position:fixed;left:0;right:0;top:0;height:56px;background:#fff;border-bottom:1px solid rgba(0,0,0,.06);align-items:center;padding:0 12px;z-index:8}
+        .toggle{background:transparent;border:0;font-size:22px;cursor:pointer;padding:8px 10px;border-radius:6px}
+
+        @media (max-width:860px){
+            .sidebar{position:fixed;width:100%;height:auto;top:56px;left:0;transform:translateY(-120%);transition:transform .25s ease;z-index:9}
+            .sidebar.open{transform:translateY(0)}
+            .content{margin-left:0;padding-top:76px}
+            .topbar{display:flex}
+        }
+    </style>
+</head>
+<body>
+
+    <header class="topbar" role="banner">
+        <button class="toggle" id="toggleBtn" aria-expanded="false" aria-controls="side">☰</button>
+        <div style="font-weight:600;margin-left:8px">Mi sitio — Menú</div>
+    </header>
+
+    <aside class="sidebar" id="side" role="navigation" aria-label="Menú principal">
+        <div class="brand">
+            <img src="logo/SBC_TRANSPORT.jpg" alt="Logo SBC Transport">
+            <h1>SBC TRANSORT SAC</h1>
+        </div>
+
+        <nav>
+            <ul>
+                <li><a href="#inicio" class="active">Inicio</a></li>
+                <li><a href="#servicios">Servicios</a></li>
+                <li><a href="#portafolio">Portafolio</a></li>
+                <li><a href="#clientes">Clientes</a></li>
+                <li><a href="#contacto">Contacto</a></li>
+            </ul>
+        </nav>
+    </aside>
+
+    <main class="content" role="main">
+        <section id="inicio"><h2>Inicio</h2><p>Contenido de inicio...</p><p style="height:600px"></p></section>
+        <section id="servicios"><h2>Servicios</h2><p>Contenido de servicios...</p><p style="height:600px"></p></section>
+        <section id="portafolio"><h2>Portafolio</h2><p>Contenido de portafolio...</p><p style="height:600px"></p></section>
+        <section id="clientes"><h2>Clientes</h2><p>Contenido de clientes...</p><p style="height:600px"></p></section>
+        <section id="contacto"><h2>Contacto</h2><p>Contenido de contacto...</p></section>
+    </main>
+
+    <script>
+        const toggleBtn = document.getElementById('toggleBtn');
+        const sidebar = document.getElementById('side');
+        toggleBtn && toggleBtn.addEventListener('click', () => {
+            const open = sidebar.classList.toggle('open');
+            toggleBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        });
+
+        // Resalta enlace según scroll
+        const links = document.querySelectorAll('nav a');
+        const sections = Array.from(document.querySelectorAll('main section'));
+        function onScroll(){
+            const y = window.scrollY + 120;
+            let current = sections[0].id;
+            for (const sec of sections) if (sec.offsetTop <= y) current = sec.id;
+            links.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + current));
+        }
+        window.addEventListener('scroll', onScroll, {passive:true});
+        onScroll();
+    </script>
+
+</body>
+</html>
