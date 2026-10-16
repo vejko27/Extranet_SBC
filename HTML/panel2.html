@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/x-icon" href="../logo/SBC_TRANSPORT.jpg" />
+    <link rel="stylesheet" href="../pdf-reader.css" />
+    <title>Manuales SBC Transport</title>
+    <style>
+      :root {
+        --sidebar-w: 260px;
+        --bg: #f5f7fb;
+        --accent: #0078d4;
+        --text: #222;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family:
+          Segoe UI,
+          Roboto,
+          Arial,
+          sans-serif;
+        background: var(--bg);
+        color: var(--text);
+      }
+
+      /* Sidebar */
+      .sidebar {
+        position: fixed;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: var(--sidebar-w);
+        background: #fff;
+        border-right: 1px solid rgba(0, 0, 0, 0.06);
+        padding: 20px;
+        overflow: auto;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 16px;
+      }
+      .brand img {
+        width: 36px;
+        height: 36px;
+        border-radius: 6px;
+      }
+      .brand h1 {
+        font-size: 1rem;
+        margin: 0;
+      }
+
+      nav ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+      nav li {
+        margin: 6px 0;
+      }
+      nav a {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        text-decoration: none;
+        color: var(--text);
+        padding: 10px 12px;
+        border-radius: 6px;
+      }
+      nav a:hover {
+        background: rgba(0, 0, 0, 0.04);
+      }
+      nav a.active {
+        background: linear-gradient(90deg, var(--accent), #2aa1ff);
+        color: #fff;
+      }
+
+      /* Content */
+      .content {
+        margin-left: var(--sidebar-w);
+        padding: 28px;
+        min-height: 100vh;
+      }
+
+      /*Estilo para visualizar el dumento pdf*/
+      .title-pdf {
+        text-align: center;
+        margin: 20px 0;
+        color: #007a3d;
+        font-size: 24px;
+        font-weight: bold;
+        text-shadow: cornflowerblue 1px 1px 2px;
+      }
+
+      #manual-title {
+        text-align: center;
+      }
+
+      .parrafos-estilos {
+        text-align: center;
+        margin: 10px 20px;
+        color: #333333;
+        font-size: 16px;
+        font-weight: bold;
+        gap: 5px;
+      }
+      .manual-description {
+        line-height: 1.5;
+      }
+
+      .topbar-title {
+        font-weight: 600;
+        margin-left: 8px;
+      }
+
+      /* Topbar (mobile) */
+      .topbar {
+        display: none;
+        position: fixed;
+        left: 0;
+        right: 0;
+        top: 0;
+        height: 56px;
+        background: #fff;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+        align-items: center;
+        padding: 0 12px;
+        z-index: 8;
+      }
+      .toggle {
+        background: transparent;
+        border: 0;
+        font-size: 22px;
+        cursor: pointer;
+        padding: 8px 10px;
+        border-radius: 6px;
+      }
+
+      @media (max-width: 860px) {
+        .sidebar {
+          position: fixed;
+          width: 100%;
+          height: auto;
+          top: 56px;
+          left: 0;
+          transform: translateY(-120%);
+          transition: transform 0.25s ease;
+          z-index: 9;
+        }
+        .sidebar.open {
+          transform: translateY(0);
+        }
+        .content {
+          margin-left: 0;
+          padding-top: 76px;
+        }
+        .topbar {
+          display: flex;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="topbar" role="banner">
+      <button
+        class="toggle"
+        id="toggleBtn"
+        aria-expanded="false"
+        aria-controls="side"
+      >
+        ☰
+      </button>
+      <div class="topbar-title">Manuales SBC Transport</div>
+    </header>
+
+    <aside
+      class="sidebar"
+      id="side"
+      role="navigation"
+      aria-label="Menú principal"
+    >
+      <div class="brand">
+        <img src="../logo/SBC_TRANSPORT.jpg" alt="Logo SBC Transport" />
+        <h1>SBC TRANSORT SAC</h1>
+      </div>
+
+      <nav>
+        <ul>
+          <li>
+            <a
+              class="active"
+              href="#"
+              data-title="Compartir Internet desde Equipo móvil"
+              data-description="En este manual explica cómo compartir internet desde un equipo móvil a otro dispositivo como por ejemplo: tu pc, laptop o tablet. con el paso a paso que vamos a seguir en este documento que visualizamos."
+              data-pdf="../Manuales/Compartir_Internet_Celular_Laptop.pdf"
+              aria-current="page"
+            >Compartir Internet desde Equipo móvil</a>
+          </li>
+          <li>
+            <a
+              href="#"
+              data-title="Plan de Contingencia de transportes"
+              data-description="Plan de contingencia para transportes de la empresa SBC Transport S.A.C."
+              data-pdf="../Manuales/SBC_P_030 _PLANDECONTINGENCIAPARATRANSPORTE.pdf"
+            >Plan de Contingencia de transportes</a>
+          </li>
+          <li>
+            <a
+              href="#"
+              data-title="Procedimiento de Control de Precintos de Seguridad"
+              data-description="Procedimiento para el control de precintos administrados por SBC Transport S.A.C."
+              data-pdf="../Manuales/SBA.P.027 - Procedimiento de Control de Precintos de Seguridad.pdf"
+            >Procedimiento de Control de Precintos de Seguridad</a>
+          </li>
+          <li>
+            <a
+              href="#"
+              data-title="Procedimiento de Control de Rutas: Versión 2"
+              data-description="Procedimiento de control de rutas de SBC Transport S.A.C."
+              data-pdf="../Manuales/SBC_P_029_PROCEDIMIENTO DE CONTROL DE RUTAS_V2.pdf"
+            >Procedimiento de Control de Rutas: Versión 2</a>
+          </li>
+        </ul>
+      </nav>
+    </aside>
+
+    <main class="content" role="main">
+      <div class="contenedor-pdf">
+        <h1 class="title-pdf">Manuales</h1>
+        <h2 id="manual-title">Compartir Internet desde Equipo móvil</h2>
+        <p id="manual-description" class="parrafos-estilos manual-description">
+          En este manual explica cómo compartir internet desde un equipo móvil
+          a otro dispositivo como por ejemplo: tu pc, laptop o tablet. con el
+          paso a paso que vamos a seguir en este documento que visualizamos.
+        </p>
+        <div
+          class="pdf-reader"
+          data-pdf="../Manuales/Compartir_Internet_Celular_Laptop.pdf"
+          aria-label="Documento PDF"
+        >
+          <p class="pdf-reader-status" role="status">Cargando documento...</p>
+        </div>
+      </div>
+    </main>
+
+    <script src="../pdfjs/pdf.min.js"></script>
+    <script src="../pdf-reader.js"></script>
+    <script>
+      const toggleBtn = document.getElementById("toggleBtn");
+      const sidebar = document.getElementById("side");
+      toggleBtn &&
+        toggleBtn.addEventListener("click", () => {
+          const open = sidebar.classList.toggle("open");
+          toggleBtn.setAttribute("aria-expanded", open ? "true" : "false");
+        });
+
+      const manualLinks = document.querySelectorAll("nav a[data-pdf]");
+      const manualReader = document.querySelector(".pdf-reader");
+      const manualTitle = document.getElementById("manual-title");
+      const manualDescription = document.getElementById("manual-description");
+
+      manualLinks.forEach((link) => {
+        link.addEventListener("click", (event) => {
+          event.preventDefault();
+
+          manualTitle.textContent = link.dataset.title;
+          manualDescription.textContent = link.dataset.description;
+          manualReader.dataset.pdf = link.dataset.pdf;
+
+          manualLinks.forEach((item) => {
+            item.classList.toggle("active", item === link);
+            if (item === link) {
+              item.setAttribute("aria-current", "page");
+            } else {
+              item.removeAttribute("aria-current");
+            }
+          });
+
+          window.renderPdfReader(manualReader);
+
+          if (window.matchMedia("(max-width: 860px)").matches) {
+            sidebar.classList.remove("open");
+            toggleBtn.setAttribute("aria-expanded", "false");
+          }
+        });
+      });
+    </script>
+  </body>
+</html>

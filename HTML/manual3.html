@@ -2,8 +2,9 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="icon" type="image/x-icon" href="logo/SBC_TRANSPORT.jpg" />
-    <link rel="stylesheet" href="Style.css" />
+    <link rel="icon" type="image/x-icon" href="../logo/SBC_TRANSPORT.jpg" />
+    <link rel="stylesheet" href="../Style.css" />
+    <link rel="stylesheet" href="../pdf-reader.css" />
     <title> Procedimiento de Control de Precintos de Seguridad</title>
   </head>
   <body>
@@ -15,13 +16,11 @@
         de la empresa SBC Transport S.A.C.
       </p>
       
-      <iframe class="iframe-manual"
-        src="Manuales/SBA.P.027 - Procedimiento de Control de Precintos de Seguridad.pdf"
-      ></iframe>
+      <div class="pdf-reader" data-pdf="../Manuales/SBA.P.027 - Procedimiento de Control de Precintos de Seguridad.pdf" aria-label="Documento PDF">
+        <p class="pdf-reader-status" role="status">Cargando documento...</p>
+      </div>
     </div>
-
-
-    
-    
+    <script src="../pdfjs/pdf.min.js"></script>
+    <script src="../pdf-reader.js"></script>
   </body>
 </html>

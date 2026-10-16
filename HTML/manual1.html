@@ -3,8 +3,9 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="icon" type="image/x-icon" href="logo/SBC_TRANSPORT.jpg" />
-    <link rel="stylesheet" href="Style.css" />
+    <link rel="icon" type="image/x-icon" href="../logo/SBC_TRANSPORT.jpg" />
+    <link rel="stylesheet" href="../Style.css" />
+    <link rel="stylesheet" href="../pdf-reader.css" />
     <title>Manual de Usuario</title>
   </head>
   <body>
@@ -16,13 +17,11 @@
         paso que vamos a seguir en este documento que visualizamos.
       </p>
       
-      <iframe class="iframe-manual"
-        src="Manuales/Compartir_Internet_Celular_Laptop.pdf"
-      ></iframe>
+      <div class="pdf-reader" data-pdf="../Manuales/Compartir_Internet_Celular_Laptop.pdf" aria-label="Documento PDF">
+        <p class="pdf-reader-status" role="status">Cargando documento...</p>
+      </div>
     </div>
-
-
-    
-    
+    <script src="../pdfjs/pdf.min.js"></script>
+    <script src="../pdf-reader.js"></script>
   </body>
 </html>
