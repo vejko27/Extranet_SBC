@@ -1,156 +1,403 @@
-/*reseto básico*/
-
-*{
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
-
-body, html {
-    height: 100%;
-    font-family: 'Segoe UI', Verdana, sans-serif;
+html, body {
+  height: 100%;
+  font-family: 'Segoe UI', Verdana, sans-serif;
 }
 
-
-/*Estilo para visualizar el dumento pdf*/
-.title-pdf{
-    text-align: center;
-    margin: 20px 0;
-    color:#007a3d;
-    font-size: 24px;
-    font-weight: bold;
-    text-shadow:cornflowerblue 1px 1px 2px;
-}
-.parrafos-estilos{
-    text-align: center;
-    margin: 10px 20px;
-    color:#333333;
-    font-size: 16px;
-    font-weight: bold;
-    gap: 5px;
+body {
+  background: #f4f6f9;
+  color: #222;
 }
 
-.contenedor-pdf iframe{
-    
-    position: relative;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: 100%;
-    height: 100vh;
+:root {
+  --sidebar-w: 260px;
+  --bg: #f5f7fb;
+  --accent: #0078d4;
+  --text: #222;
+  --green: #007a3d;
+  --soft-gray: #e5e7eb;
+  --white: #fff;
 }
 
+/* Login */
+.login-container {
+  background: url(Img/sbc_Fondo.png) no-repeat center center;
+  background-size: cover;
+  position: relative;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  background-color: rgba(0, 60, 30, 0.6);
+  z-index: 1;
+}
+
+.login-form {
+  position: relative;
+  z-index: 2;
+  background-color: #fff;
+  padding: 40px;
+  border-radius: 8px;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+  text-align: center;
+}
+
+.login-form h1 {
+  color: var(--green);
+  margin-bottom: 10px;
+}
+
+.login-form h2 {
+  font-size: 18px;
+  color: #333;
+}
+
+.login-form p {
+  margin-bottom: 20px;
+  color: #666;
+}
+
+.login-form label {
+  display: block;
+  text-align: left;
+  margin: 10px 0 5px;
+  font-weight: bold;
+  color: #333;
+}
+
+.login-form input {
+  width: 100%;
+  padding: 12px;
+  background: #fff;
+  color: #000;
+  border: none;
+  border-radius: 4px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.login-form button:hover {
+  background-color: #005f2e;
+}
+
+.botton {
+  box-sizing: 40px;
+  font-size: 14px;
+  border-radius: 4px;
+  text-align: center;
+  justify-content: center;
+  font-weight: bold;
+  padding: 12px 24px;
+  background: #fff;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+}
+
+.contenido main {
+  padding: 20px;
+}
+
+/* Layout sidebar */
+.layout {
+  display: flex;
+  height: 100vh;
+}
+
+.sidebar {
+  width: 260px;
+  background: linear-gradient(180deg, #7BE0A5, #1c1f26);
+  color: #F9FAFB;
+  padding: 20px;
+}
+
+.logo {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.logo img {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  margin-bottom: 10px;
+}
+
+.logo h3 {
+  font-size: 16px;
+}
+
+.sidebar ul {
+  list-style: none;
+}
+
+.sidebar ul li {
+  padding: 12px 15px;
+  margin-bottom: 5px;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background 0.3s;
+}
+
+.sidebar ul li.has-submenu {
+  display: block;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sidebar ul li:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.sidebar ul li.active {
+  background: #149062;
+}
+
+.submenu {
+  max-height: 0;
+  overflow: hidden;
+  list-style: none;
+  margin-top: 5px;
+  padding-left: 35px;
+  transition: max-height 0.3s ease-in-out;
+}
+
+.has-submenu.open .submenu {
+  max-height: 200px;
+}
+
+.submenu li {
+  padding: 8px 15px;
+  margin-bottom: 2px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background 0.3s;
+}
+
+.submenu li:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.contenido {
+  flex: 1;
+  background: #f8f9fb;
+  padding: 30px;
+}
+
+.contenido h1 {
+  font-size: 28px;
+  margin-bottom: 5px;
+}
+
+.contenido p {
+  color: #888;
+}
+
+/* Documentos PDF / panel manuales */
+.title-pdf {
+  text-align: center;
+  margin: 20px 0;
+  color: var(--green);
+  font-size: 24px;
+  font-weight: bold;
+  text-shadow: cornflowerblue 1px 1px 2px;
+}
+
+#manual-title {
+  text-align: center;
+}
+
+.parrafos-estilos {
+  text-align: center;
+  margin: 10px 20px;
+  color: #333333;
+  font-size: 16px;
+  font-weight: bold;
+  gap: 5px;
+}
+
+.manual-description {
+  line-height: 1.5;
+}
+
+.topbar-title {
+  font-weight: 600;
+  margin-left: 8px;
+}
+
+.pdf-reader {
+  display: grid;
+  justify-items: center;
+  gap: 16px;
+  width: 100%;
+  padding: 16px;
+  background: var(--soft-gray);
+}
+
+.pdf-reader-status {
+  margin: 0;
+  color: #333;
+  text-align: center;
+}
+
+.pdf-reader-page {
+  width: min(100%, 900px);
+  margin: 0;
+  background: var(--white);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.pdf-reader-page canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+}
 
 #pdf-container button {
-    margin: 10px;
-    padding: 10px 20px;
-    background-color: #007a3d;
-    color: white;
-    border: none;
-    cursor: pointer;
+  margin: 10px;
+  padding: 10px 20px;
+  background-color: var(--green);
+  color: #fff;
+  border: none;
+  cursor: pointer;
 }
 
 #pdf-container span {
-    margin-bottom: 10px;
+  margin-bottom: 10px;
 }
 
 #pdf-viewer {
-    border: 1px solid #ccc;
+  border: 1px solid #ccc;
 }
 
-/* Fondo con imagen de camiones*/
-
-.login-container{
-    background: url(Img/sbc_Fondo.png) no-repeat center center;
-    background-size: cover;
-    position: relative;
-    height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-
+/* Panel lateral del menú de manuales */
+.sidebar-panel {
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: var(--sidebar-w);
+  background: #fff;
+  border-right: 1px solid rgba(0, 0, 0, 0.06);
+  padding: 20px;
+  overflow: auto;
 }
 
-/*Capa oscura para contraste*/
-.overlay{
-    position: absolute;
-    top: 0;
-    left: 0;
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.brand img {
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+}
+
+.brand h1 {
+  font-size: 1rem;
+  margin: 0;
+}
+
+nav ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+nav li {
+  margin: 6px 0;
+}
+
+nav a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: var(--text);
+  padding: 10px 12px;
+  border-radius: 6px;
+}
+
+nav a:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+nav a.active {
+  background: linear-gradient(90deg, var(--accent), #2aa1ff);
+  color: #fff;
+}
+
+.content {
+  margin-left: var(--sidebar-w);
+  padding: 28px;
+  min-height: 100vh;
+}
+
+.topbar {
+  display: none;
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 56px;
+  background: #fff;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  align-items: center;
+  padding: 0 12px;
+  z-index: 8;
+}
+
+.toggle {
+  background: transparent;
+  border: 0;
+  font-size: 22px;
+  cursor: pointer;
+  padding: 8px 10px;
+  border-radius: 6px;
+}
+
+@media (max-width: 860px) {
+  .sidebar-panel {
+    position: fixed;
     width: 100%;
     height: auto;
-    background-color: rgba(0, 60, 30, 0.6);
-    z-index: 1;
-}
+    top: 56px;
+    left: 0;
+    transform: translateY(-120%);
+    transition: transform 0.25s ease;
+    z-index: 9;
+  }
 
-/*Formulario*/
-.login-form{
-    position: relative;
-    z-index: 2;
-    background-color:white;
-    padding: 40px;
-    border-radius: 8px;
-    width: 100%;
-    max-width: 400px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
-    text-align: center;
-}
+  .sidebar-panel.open {
+    transform: translateY(0);
+  }
 
-.login-form h1{
-    color: #007a3d;
-    margin-bottom: 10px;
-}
+  .content {
+    margin-left: 0;
+    padding-top: 76px;
+  }
 
-.login-form h2{
-    font-size: 18px;
-    color:#333;
-}
-
-.login-form p{
-    margin-bottom: 20px;
-    color: #666;
-}
-
-.login-form label{
-    display: block;
-    text-align: left;
-    margin: 10px 0 5px;
-    font-weight: bold;
-    color: #333;
-}
-
-.login-form input{
-    width: 100%;
-    padding: 12px;
-    background-color:white;
-    color:black;
-    border: none;
-    border-radius: 4px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-}
-
-.login-form button:hover{
-    background-color: #005f2e;
-}
-
-.botton{
-    box-sizing: 40px;
-    font-size: 14px;
-    border-radius: 4px ;
-    gap: 5;
-    text-align: center;
-    justify-content: center;
-    font-weight: bold;
-    padding: 12px 24px;
-    background-color:white;
-    cursor: pointer;
-    transition: all 0.3s ease; /* Animación suave */
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-}
-
-.contenido main{
-    padding: 20px;
-    
+  .topbar {
+    display: flex;
+  }
 }
