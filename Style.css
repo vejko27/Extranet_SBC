@@ -328,6 +328,47 @@ nav li {
   margin: 6px 0;
 }
 
+.menu-group-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  border: 0;
+  border-radius: 6px;
+  padding: 10px 12px;
+  background: #e8f5ed;
+  color: #176b45;
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.menu-group-toggle::after {
+  content: "▾";
+  margin-left: 8px;
+  transition: transform 0.2s ease;
+}
+
+.menu-group-toggle[aria-expanded="false"]::after {
+  transform: rotate(-90deg);
+}
+
+.menu-group-toggle:hover {
+  background: #d8eddf;
+}
+
+.menu-submenu {
+  margin-top: 4px;
+  padding-left: 10px;
+  border-left: 2px solid #dce9e0;
+}
+
+.menu-submenu[hidden] {
+  display: none;
+}
+
 nav a {
   display: flex;
   align-items: center;
