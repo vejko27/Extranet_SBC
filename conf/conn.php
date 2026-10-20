@@ -1,8 +1,6 @@
 <?php
 
 $localhost = "localhost";
-$user = "root"; 
+$user = "root";
 $password = "";
-$database = "extranet_sbc"; 
-
-?>
+$database = "extranet_sbc";
