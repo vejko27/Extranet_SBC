@@ -7,6 +7,7 @@ $creaUsuarios = puede('Usuarios y roles', 'crear');
 $veManuales = puede('Manuales', 'ver');
 $adminManuales = puede('Manuales', 'crear') || puede('Manuales', 'editar') || puede('Manuales', 'eliminar');
 $veProveedores = puede('Proveedores', 'ver');
+$veRRHH = puede('Recursos Humanos', 'ver');
 $manuales = require __DIR__ . '/manuales_lista.php';
 $manualActivo = $paginaActiva === 'manuales' ? (string)($_GET['m'] ?? array_key_first($manuales)) : null;
 ?>
@@ -40,6 +41,9 @@ $manualActivo = $paginaActiva === 'manuales' ? (string)($_GET['m'] ?? array_key_
             <?php endif; ?>
             <?php if ($veProveedores): ?>
                 <a href="proveedores.php" class="<?= $paginaActiva === 'proveedores' ? 'activo' : '' ?>">Proveedores</a>
+            <?php endif; ?>
+            <?php if ($veRRHH): ?>
+                <a href="rrhh.php" class="<?= $paginaActiva === 'rrhh' ? 'activo' : '' ?>">Recursos Humanos</a>
             <?php endif; ?>
             <?php if ($veManuales): ?>
                 <button type="button" class="grupo-titulo grupo-toggle" id="toggle-manuales" aria-expanded="true" aria-controls="submenu-manuales">

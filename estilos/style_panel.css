@@ -146,6 +146,20 @@ dialog { max-height: 92vh; overflow-y: auto; }
 .prov-anio { display: flex; align-items: center; gap: 8px; font-weight: 600; color: #475569; }
 .prov-import { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 14px 18px; }
 .prov-import label { font-weight: 600; color: #475569; }
+.ficha h2 { font-size: 16px; margin-bottom: 14px; color: #00566c; text-transform: uppercase; letter-spacing: .4px; }
+.ficha fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+.ficha-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0 14px; }
+.ficha input, .ficha select { width: 100%; min-width: 0; }
+.ficha input:disabled, .ficha select:disabled { background: #f1f5f9; color: #0f172a; opacity: 1; }
+.ficha-item { border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 14px 0; margin-bottom: 14px; }
+.ficha-item-cab { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.lista-errores { margin: 0; padding-left: 18px; }
+@media print {
+    .sidebar, .no-imprimir { display: none !important; }
+    .layout { display: block; }
+    .contenido { padding: 0; }
+    .card { box-shadow: none; border: 1px solid #cbd5e1; break-inside: avoid; }
+}
 @media (max-width: 800px) { .prov-import input, .prov-import button { width: 100%; } }
 .tabla-prov th { background: #006d88; color: #fff; text-align: center; font-size: 12px; }
 .tabla-prov td { font-size: 13px; text-align: center; padding: 8px 10px; }

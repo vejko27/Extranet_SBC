@@ -10,6 +10,7 @@ if ($esAdmin)       $tarjetas[] = ['permisos.php', 'Permisos', 'Gestión de perm
 if ($adminManuales) $tarjetas[] = ['admin_manuales.php', 'Administrar manuales', 'Sube, edita o elimina manuales en PDF.'];
 if ($veManuales)    $tarjetas[] = ['manuales.php', 'Manuales', 'Consulta los manuales en PDF.'];
 if ($veProveedores) $tarjetas[] = ['proveedores.php', 'Proveedores', 'Listado de proveedores homologados.'];
+if ($veRRHH)        $tarjetas[] = ['rrhh.php', 'Recursos Humanos', 'Fichas de datos del personal.'];
 ?>
 
 <h1>Bienvenido, <?= htmlspecialchars($_SESSION['nombre']) ?></h1>
