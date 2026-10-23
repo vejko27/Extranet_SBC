@@ -8,6 +8,7 @@ exigirPermiso('Proveedores', 'ver');
 $puedeCrear = puede('Proveedores', 'crear');
 $puedeEditar = puede('Proveedores', 'editar');
 $puedeEliminar = puede('Proveedores', 'eliminar');
+$esAdmin = (int)($_SESSION['rol_id'] ?? 0) === 1;
 
 $conexion->set_charset('utf8mb4');
 if (empty($_SESSION['csrf'])) {
@@ -71,6 +72,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $s->bind_param('si', $valor, $id);
             $s->execute();
             $ok = 'Dato actualizado.';
+        }
+    } elseif ($accion === 'importar') {
+        $anioImp = (int)($_POST['anio'] ?? 0);
+        $f = $_FILES['excel'] ?? null;
+        if (!$esAdmin) {
+            $err = 'Solo el administrador puede importar un Excel.';
+        } elseif ($anioImp < 2000 || $anioImp > 2100) {
+            $err = 'Año no válido.';
+        } elseif (!$f || $f['error'] !== UPLOAD_ERR_OK || $f['size'] > 10000000
+            || strtolower(pathinfo($f['name'], PATHINFO_EXTENSION)) !== 'xlsx') {
+            $err = 'Selecciona un archivo Excel (.xlsx) de hasta 10 MB.';
+        } else {
+            try {
+                require_once __DIR__ . '/excel_proveedores.php';
+                $res = proveedores_desde_excel(file_get_contents($f['tmp_name']));
+                if ($res['errores']) {
+                    $err = 'No se importó nada. ' . implode(' · ', array_slice($res['errores'], 0, 5))
+                        . (count($res['errores']) > 5 ? ' · (y ' . (count($res['errores']) - 5) . ' más)' : '');
+                } else {
+                    $creado = $anioImp . '-01-01 00:00:00';
+                    $conexion->begin_transaction();
+                    try {
+                        $d = $conexion->prepare("DELETE FROM proveedores WHERE YEAR(creado) = ?");
+                        $d->bind_param('i', $anioImp);
+                        $d->execute();
+                        $s = $conexion->prepare("INSERT INTO proveedores (razon_social,ruc,tipo,certificado,mes,acuerdo_seguridad,ddjj,filtros_aplicados,status,registrado_sistema,creado) VALUES (?,?,?,?,?,?,?,?,?,?,?)");
+                        foreach ($res['filas'] as $p) {
+                            $s->bind_param('sssssssssss', $p['razon_social'], $p['ruc'], $p['tipo'], $p['certificado'], $p['mes'],
+                                $p['acuerdo_seguridad'], $p['ddjj'], $p['filtros_aplicados'], $p['status'], $p['registrado_sistema'], $creado);
+                            $s->execute();
+                        }
+                        $conexion->commit();
+                        $_SESSION['anio_prov'] = $anioImp;
+                        $ok = 'Excel importado: ' . count($res['filas']) . ' proveedores en ' . $anioImp . '.';
+                    } catch (Throwable $ex) {
+                        $conexion->rollback();
+                        $err = 'No se pudo guardar la información; no se hicieron cambios.';
+                    }
+                }
+            } catch (Throwable $ex) {
+                $err = $ex->getMessage();
+            }
         }
     } elseif ($accion === 'eliminar') {
         if (!$puedeEliminar) {
@@ -172,6 +215,17 @@ require __DIR__ . '/layout_inicio.php';
     <button type="button" id="btn-nuevo">+ Agregar proveedor</button>
     <?php endif; ?>
 </div>
+<?php if ($esAdmin): ?>
+<form method="POST" enctype="multipart/form-data" class="card prov-import"
+      onsubmit="return confirm('Esto reemplazará TODOS los proveedores de <?= (int)$anio ?> con el contenido del Excel. ¿Continuar?');">
+    <input type="hidden" name="csrf" value="<?= e($_SESSION['csrf']) ?>">
+    <input type="hidden" name="accion" value="importar">
+    <input type="hidden" name="anio" value="<?= (int)$anio ?>">
+    <label for="excel">Importar Excel (reemplaza el listado de <?= (int)$anio ?>):</label>
+    <input type="file" name="excel" id="excel" accept=".xlsx" required>
+    <button type="submit">Subir y reemplazar</button>
+</form>
+<?php endif; ?>
 
 <div class="card tabla-scroll">
     <table class="tabla-prov">

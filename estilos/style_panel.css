@@ -144,6 +144,9 @@ dialog { max-height: 92vh; overflow-y: auto; }
 .tabla-scroll { overflow-x: auto; }
 .prov-barra { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
 .prov-anio { display: flex; align-items: center; gap: 8px; font-weight: 600; color: #475569; }
+.prov-import { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 14px 18px; }
+.prov-import label { font-weight: 600; color: #475569; }
+@media (max-width: 800px) { .prov-import input, .prov-import button { width: 100%; } }
 .tabla-prov th { background: #006d88; color: #fff; text-align: center; font-size: 12px; }
 .tabla-prov td { font-size: 13px; text-align: center; padding: 8px 10px; }
 .tabla-prov td:nth-child(2) { text-align: left; min-width: 220px; }
