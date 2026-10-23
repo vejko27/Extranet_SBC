@@ -1,10 +1,13 @@
 <?php
+// Página de inicio/login: redirige al panel si ya hay sesión y muestra el formulario de acceso.
 session_start();
+// Si el usuario ya inició sesión, va directo al dashboard
 if (isset($_SESSION['id_usuario'])) {
     header('Location: PHP/dashboard.php');
     exit;
 }
 
+// Mensajes de error según el código recibido por GET
 $errores = [
     'credenciales' => 'Usuario o contraseña incorrectos.',
     'inactivo' => 'Usuario inactivo. Contacta al administrador.',
@@ -24,11 +27,13 @@ $err = $_GET['error'] ?? '';
   <body>
     <div class="login-container">
       <div class="overlay"></div>
+      <!-- Formulario de login: envía usuario y contraseña a PHP/login.php -->
       <form class="login-form" action="PHP/login.php" method="POST">
         <h1>Sistema de Gestión Interno SBC</h1>
         <h2>SBC TRANSPORT SAC</h2>
         <p>Ingresa a tu cuenta corporativa</p>
 
+        <?php /* Muestra el error de login si el código es válido */ ?>
         <?php if (isset($errores[$err])): ?>
           <p style="color:#b00020;font-weight:bold;"><?= htmlspecialchars($errores[$err]) ?></p>
         <?php endif; ?>

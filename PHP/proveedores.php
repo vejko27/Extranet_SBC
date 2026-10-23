@@ -1,26 +1,34 @@
 <?php
+// Módulo de proveedores homologados: listado por año, alta/edición/baja, cambio rápido de estados,
+// importación desde Excel (solo administrador) y búsqueda en vivo. Procesa los POST y muestra la página.
+// Variables de la página (usadas por el layout) y dependencias de sesión/BD
 $paginaActiva = 'proveedores';
 $tituloPagina = 'Proveedores';
 require_once __DIR__ . '/auth.php';
 require __DIR__ . '/bd_conexion.php';
 
+// Permisos: sin 'ver' se bloquea el acceso; el resto habilita cada acción
 exigirPermiso('Proveedores', 'ver');
 $puedeCrear = puede('Proveedores', 'crear');
 $puedeEditar = puede('Proveedores', 'editar');
 $puedeEliminar = puede('Proveedores', 'eliminar');
 $esAdmin = (int)($_SESSION['rol_id'] ?? 0) === 1;
 
+// Charset de la conexión y token CSRF de la sesión
 $conexion->set_charset('utf8mb4');
 if (empty($_SESSION['csrf'])) {
     $_SESSION['csrf'] = bin2hex(random_bytes(32));
 }
+// Escapa texto para imprimirlo de forma segura en HTML
 function e($v) { return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
 
+// Listas de valores permitidos (también sirven para validar los POST)
 $MESES = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SET','OCT','NOV','DIC'];
 $TRI = ['SI','NO','NO APLICA'];
 $STATUS = ['PENDIENTE','HOMOLOGADO'];
 $SINO = ['SI','NO'];
 
+// Procesamiento POST: valida CSRF y ejecuta la acción; luego redirige (patrón PRG con mensaje flash)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $ok = $err = '';
     $accion = $_POST['accion'] ?? '';
@@ -28,10 +36,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!hash_equals($_SESSION['csrf'], $_POST['csrf'] ?? '')) {
         $err = 'Sesión inválida, recarga la página.';
     } elseif ($accion === 'guardar') {
+        // Alta (id = 0) o edición: exige el permiso correspondiente
         $nuevo = $id === 0;
         if (($nuevo && !$puedeCrear) || (!$nuevo && !$puedeEditar)) {
             $err = 'No tienes permiso para realizar esta acción.';
         } else {
+            // Lectura y limpieza de los campos del formulario
             $razon = trim($_POST['razon_social'] ?? '');
             $ruc = trim($_POST['ruc'] ?? '');
             $tipo = mb_strtoupper(trim($_POST['tipo'] ?? ''));
@@ -42,17 +52,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $fi = $_POST['filtros_aplicados'] ?? '';
             $stt = $_POST['status'] ?? '';
             $reg = $_POST['registrado_sistema'] ?? '';
+            // Validación: obligatorios, RUC de 11 dígitos, longitudes máximas y valores de listas
             if ($razon === '' || !preg_match('/^\d{11}$/', $ruc) || $tipo === '' || mb_strlen($razon) > 200
                 || mb_strlen($tipo) > 40 || mb_strlen($cert) > 60
                 || !in_array($mes, $MESES, true) || !in_array($ac, $TRI, true) || !in_array($dj, $TRI, true)
                 || !in_array($fi, $TRI, true) || !in_array($stt, $STATUS, true) || !in_array($reg, $SINO, true)) {
                 $err = 'Revisa los datos: razón social, RUC de 11 dígitos y tipo son obligatorios.';
             } elseif ($nuevo) {
+                // INSERT de un proveedor nuevo (consulta preparada)
                 $s = $conexion->prepare("INSERT INTO proveedores (razon_social,ruc,tipo,certificado,mes,acuerdo_seguridad,ddjj,filtros_aplicados,status,registrado_sistema) VALUES (?,?,?,?,?,?,?,?,?,?)");
                 $s->bind_param('ssssssssss', $razon, $ruc, $tipo, $cert, $mes, $ac, $dj, $fi, $stt, $reg);
                 $s->execute();
                 $ok = 'Proveedor agregado correctamente.';
             } else {
+                // UPDATE completo del proveedor existente
                 $s = $conexion->prepare("UPDATE proveedores SET razon_social=?,ruc=?,tipo=?,certificado=?,mes=?,acuerdo_seguridad=?,ddjj=?,filtros_aplicados=?,status=?,registrado_sistema=? WHERE id=?");
                 $s->bind_param('ssssssssssi', $razon, $ruc, $tipo, $cert, $mes, $ac, $dj, $fi, $stt, $reg, $id);
                 $s->execute();
@@ -60,6 +73,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
     } elseif ($accion === 'acuerdo') {
+        // Cambio rápido de un solo campo; la lista blanca evita columnas/valores arbitrarios
         $campo = $_POST['campo'] ?? '';
         $permitidos = ['acuerdo_seguridad' => $TRI, 'ddjj' => $TRI, 'filtros_aplicados' => $TRI, 'registrado_sistema' => $SINO, 'status' => $STATUS];
         $valor = $_POST['valor'] ?? '';
@@ -74,6 +88,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $ok = 'Dato actualizado.';
         }
     } elseif ($accion === 'importar') {
+        // Importación de Excel: solo admin, año válido y archivo .xlsx de hasta 10 MB
         $anioImp = (int)($_POST['anio'] ?? 0);
         $f = $_FILES['excel'] ?? null;
         if (!$esAdmin) {
@@ -85,12 +100,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $err = 'Selecciona un archivo Excel (.xlsx) de hasta 10 MB.';
         } else {
             try {
+                // Lee y valida todo el Excel antes de tocar la base de datos
                 require_once __DIR__ . '/excel_proveedores.php';
                 $res = proveedores_desde_excel(file_get_contents($f['tmp_name']));
                 if ($res['errores']) {
                     $err = 'No se importó nada. ' . implode(' · ', array_slice($res['errores'], 0, 5))
                         . (count($res['errores']) > 5 ? ' · (y ' . (count($res['errores']) - 5) . ' más)' : '');
                 } else {
+                    // Transacción: borra los proveedores del año y los reemplaza por los del Excel
                     $creado = $anioImp . '-01-01 00:00:00';
                     $conexion->begin_transaction();
                     try {
@@ -116,6 +133,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
     } elseif ($accion === 'eliminar') {
+        // Baja de un proveedor por id (requiere permiso 'eliminar')
         if (!$puedeEliminar) {
             $err = 'No tienes permiso para realizar esta acción.';
         } else {
@@ -125,16 +143,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $ok = 'Proveedor eliminado.';
         }
     }
+    // Guarda el mensaje y redirige conservando la búsqueda actual
     $_SESSION['flash'] = ['ok' => $ok, 'err' => $err];
-    header('Location: proveedores.php');
+    header('Location: proveedores.php' . (!empty($_SESSION['q_prov']) ? '?q=' . urlencode($_SESSION['q_prov']) : ''));
     exit;
 }
 
+// Recupera (y consume) el mensaje flash del POST anterior
 $flash = $_SESSION['flash'] ?? ['ok' => '', 'err' => ''];
 unset($_SESSION['flash']);
 $ok = $flash['ok'];
 $err = $flash['err'];
 
+// Año seleccionado (GET o sesión) y lista de años disponibles para el selector
 if (isset($_GET['anio']) && preg_match('/^\d{4}$/', $_GET['anio'])) {
     $_SESSION['anio_prov'] = (int)$_GET['anio'];
 }
@@ -145,29 +166,37 @@ $anios[] = (int)date('Y');
 $anios[] = $anio;
 $anios = array_unique($anios);
 rsort($anios);
+// Consulta de los proveedores del año y cálculo de totales/porcentaje de homologados
 $st = $conexion->prepare("SELECT * FROM proveedores WHERE YEAR(creado) = ? ORDER BY id");
 $st->bind_param('i', $anio);
 $st->execute();
 $filas = $st->get_result()->fetch_all(MYSQLI_ASSOC);
 $total = count($filas);
+$buscar = mb_substr(trim((string)($_GET['q'] ?? '')), 0, 100);
+$_SESSION['q_prov'] = $buscar;
 $homologados = count(array_filter($filas, fn($p) => $p['status'] === 'HOMOLOGADO'));
 $porcentaje = $total ? (int)round($homologados * 100 / $total) : 0;
-date_default_timezone_set('America/Lima');
+// El filtrado de la búsqueda se hace en el navegador (JS) mientras se escribe
+$visibles = $filas;
+// Fecha mostrada y bandera para mostrar la columna de acciones
 $fecha = date('d/m/Y');
 $puedeModificar = $puedeEditar || $puedeEliminar;
 
+// Devuelve la clase CSS (badge) según el valor
 function clase($v) {
     return match ($v) {
         'SI' => 'b-si', 'NO' => 'b-no', 'NO APLICA' => 'b-na',
         'HOMOLOGADO' => 'b-hom', 'PENDIENTE' => 'b-pen', default => ''
     };
 }
+// Imprime las <option> de un select marcando la seleccionada
 function opciones($filas, $sel = '') {
     foreach ($filas as $o) {
         echo '<option' . ($o === $sel ? ' selected' : '') . '>' . e($o) . '</option>';
     }
 }
 
+// Imprime una celda: select con envío automático si se puede editar; si no, solo texto
 function celdaSelect($etiqueta, $campo, $opts, $p, $editable) {
     echo '<td data-label="' . e($etiqueta) . '" class="' . clase($p[$campo]) . '">';
     if ($editable) {
@@ -185,9 +214,11 @@ function celdaSelect($etiqueta, $campo, $opts, $p, $editable) {
     echo '</td>';
 }
 
+// Cabecera común de la página (menú, estilos)
 require __DIR__ . '/layout_inicio.php';
 ?>
 
+<?php /* Título, fecha y porcentaje de homologados */ ?>
 <div class="prov-cabecera">
     <div>
         <h1>Listado de proveedores homologados <?= (int)$anio ?></h1>
@@ -199,11 +230,14 @@ require __DIR__ . '/layout_inicio.php';
     </div>
 </div>
 
+<?php /* Alertas de éxito o error */ ?>
 <?php if ($ok): ?><div class="alerta ok"><?= e($ok) ?></div><?php endif; ?>
 <?php if ($err): ?><div class="alerta err"><?= e($err) ?></div><?php endif; ?>
 
+<?php /* Barra: selector de año, buscador y botón de alta */ ?>
 <div class="prov-barra">
     <form method="GET" class="form-inline prov-anio">
+        <?php if ($buscar !== ''): ?><input type="hidden" name="q" value="<?= e($buscar) ?>"><?php endif; ?>
         <label for="anio">Año de registro:</label>
         <select name="anio" id="anio" class="select-celda" onchange="this.form.submit()">
             <?php foreach ($anios as $a): ?>
@@ -211,10 +245,18 @@ require __DIR__ . '/layout_inicio.php';
             <?php endforeach; ?>
         </select>
     </form>
+    <form method="GET" class="form-inline prov-anio prov-buscar" role="search">
+        <input type="hidden" name="anio" value="<?= (int)$anio ?>">
+        <input type="search" name="q" value="<?= e($buscar) ?>" maxlength="100" placeholder="Buscar por razón social, RUC o tipo" aria-label="Buscar proveedor">
+        <button type="submit" class="btn-sec">Buscar</button>
+        <?php if ($buscar !== ''): ?><a class="btn btn-sec" href="proveedores.php?anio=<?= (int)$anio ?>">Limpiar</a><?php endif; ?>
+    </form>
     <?php if ($puedeCrear): ?>
     <button type="button" id="btn-nuevo">+ Agregar proveedor</button>
     <?php endif; ?>
 </div>
+
+<?php /* Formulario de importación de Excel (solo administrador) */ ?>
 <?php if ($esAdmin): ?>
 <form method="POST" enctype="multipart/form-data" class="card prov-import"
       onsubmit="return confirm('Esto reemplazará TODOS los proveedores de <?= (int)$anio ?> con el contenido del Excel. ¿Continuar?');">
@@ -227,6 +269,7 @@ require __DIR__ . '/layout_inicio.php';
 </form>
 <?php endif; ?>
 
+<?php /* Tabla de proveedores: encabezados, mensaje de vacío y una fila por proveedor */ ?>
 <div class="card tabla-scroll">
     <table class="tabla-prov">
         <tr>
@@ -234,11 +277,11 @@ require __DIR__ . '/layout_inicio.php';
             <th>Acuerdo de seguridad</th><th>DDJJ</th><th>Filtros aplicados</th><th>Status</th><th>Registrado en el sistema</th>
             <?php if ($puedeModificar): ?><th>Acciones</th><?php endif; ?>
         </tr>
-        <?php if (!$filas): ?>
-            <tr><td colspan="12">No hay proveedores registrados en <?= (int)$anio ?>.</td></tr>
-        <?php endif; ?>
-        <?php foreach ($filas as $i => $p): ?>
-        <tr>
+        <?php if (!$visibles): ?>
+            <tr><td colspan="12"><?= $buscar             !== '' ? 'Sin resultados para «' . e($buscar) . '».' : 'No hay proveedores registrados en ' . (int)$anio . '.' ?></td></tr>
+                    <?php endif; ?>
+                    <?php foreach ($visibles as $i => $p): ?>
+                    <tr>
             <td data-label="N°"><?= $i + 1 ?></td>
             <td data-label="Razón social"><?= e($p['razon_social']) ?></td>
             <td data-label="RUC"><?= e($p['ruc']) ?></td>
@@ -270,6 +313,7 @@ require __DIR__ . '/layout_inicio.php';
     </table>
 </div>
 
+<?php /* Modal de alta/edición (solo con permiso de crear o editar) */ ?>
 <?php if ($puedeCrear || $puedeEditar): ?>
 <dialog id="modal-prov">
     <h2 id="m_titulo">Proveedor</h2>
@@ -295,6 +339,7 @@ require __DIR__ . '/layout_inicio.php';
     </form>
 </dialog>
 <script>
+    // Control del modal: abrir() lo rellena con el proveedor (editar) o con valores por defecto (nuevo)
     const modal = document.getElementById("modal-prov");
     const campos = ["razon_social","ruc","tipo","certificado","mes","acuerdo_seguridad","ddjj","filtros_aplicados","status","registrado_sistema"];
     function abrir(p) {
@@ -306,11 +351,41 @@ require __DIR__ . '/layout_inicio.php';
         });
         modal.showModal();
     }
+    // Enlaza los botones Editar, Agregar y Cancelar
     document.querySelectorAll(".btn-editar").forEach((b) => b.addEventListener("click", () => abrir(JSON.parse(b.dataset.p))));
     const nuevo = document.getElementById("btn-nuevo");
     if (nuevo) nuevo.addEventListener("click", () => abrir(null));
     document.getElementById("f_cancelar").addEventListener("click", () => modal.close());
 </script>
 <?php endif; ?>
+<script>
+    // Filtro en vivo mientras se escribe (razón social, RUC o tipo)
+    (() => {
+        const input = document.querySelector(".prov-buscar input[name=q]");
+        const filas = [...document.querySelectorAll(".tabla-prov tr")].filter((tr) => tr.querySelector("td[data-label='RUC']"));
+        if (!input) return;
+        const norm = (s) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+        const celdas = (tr) => ["Razón social", "RUC", "Tipo"].map((l) => tr.querySelector("td[data-label='" + l + "']").textContent).join(" ");
+        const textos = filas.map((tr) => norm(celdas(tr)));
+        const vacio = document.createElement("tr");
+        vacio.innerHTML = '<td colspan="12"></td>';
+        vacio.hidden = true;
+        if (filas.length) filas[0].parentNode.appendChild(vacio);
+        input.addEventListener("input", () => {
+            const q = norm(input.value.trim());
+            let n = 0;
+            filas.forEach((tr, i) => {
+                const ver = textos[i].includes(q);
+                tr.hidden = !ver;
+                if (ver) n++;
+            });
+            vacio.hidden = n > 0 || !filas.length;
+            vacio.firstChild.textContent = "Sin resultados para «" + input.value.trim() + "».";
+        });
+        input.form.addEventListener("submit", (e) => e.preventDefault());
+        if (input.value) input.dispatchEvent(new Event("input"));
+    })();
+</script>
 
+<?php /* Cierre del layout */ ?>
 <?php require __DIR__ . '/layout_fin.php'; ?>

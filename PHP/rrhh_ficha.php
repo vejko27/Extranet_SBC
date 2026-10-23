@@ -1,20 +1,28 @@
 <?php
+// Ficha de datos del personal: formulario para crear/editar/ver (solo lectura) una ficha
+// con datos del empleado, domicilio, contacto, banco, emergencia, cónyuge e hijos.
+// Valida y guarda todo en una transacción.
+// Variables de la página para el layout (menú activo y título)
 $paginaActiva = 'rrhh';
 $tituloPagina = 'Ficha de datos del personal';
 require_once __DIR__ . '/auth.php';
 require __DIR__ . '/bd_conexion.php';
 
+// Permisos: "ver" para entrar; "crear" para fichas nuevas y "editar" para existentes
 exigirPermiso('Recursos Humanos', 'ver');
 $puedeCrear = puede('Recursos Humanos', 'crear');
 $puedeEditar = puede('Recursos Humanos', 'editar');
 
+// Codificación, zona horaria y token CSRF de la sesión
 $conexion->set_charset('utf8mb4');
 date_default_timezone_set('America/Lima');
 if (empty($_SESSION['csrf'])) {
     $_SESSION['csrf'] = bin2hex(random_bytes(32));
 }
+// Escapa texto para imprimirlo de forma segura en HTML
 function e($v) { return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
 
+// id = 0 es ficha nueva; $editable indica si el usuario puede modificar el formulario
 $id = (int)($_GET['id'] ?? $_POST['id'] ?? 0);
 $editable = $id ? $puedeEditar : $puedeCrear;
 if (!$id && !$puedeCrear) {
@@ -22,6 +30,7 @@ if (!$id && !$puedeCrear) {
     exit('Acceso denegado');
 }
 
+// Listas de opciones válidas y límites de cantidad de hijos y contactos de emergencia
 $SEXOS = ['Masculino', 'Femenino'];
 $CIVIL = ['Soltero(a)', 'Casado(a)', 'Divorciado(a)', 'Viudo(a)'];
 $HIJOS = ['Ninguno', 'Uno', 'Dos', 'Tres', 'Más de tres'];
@@ -38,6 +47,7 @@ $EDUCACION = [
 const MAX_HIJOS = 12;
 const MAX_EMERGENCIA = 3;
 
+// Longitud máxima de cada campo (datos de persona y datos propios del titular)
 $CAMPOS_PERSONA = [
     'apellido_paterno' => 80, 'apellido_materno' => 80, 'nombres' => 120,
     'dni' => 8, 'carnet_extranjeria' => 20, 'pasaporte' => 20,
@@ -48,6 +58,7 @@ $CAMPOS_TITULAR = [
     'cuenta_bancaria' => 30, 'banco' => 60, 'banco_cts' => 60, 'cuenta_cts' => 30, 'profesion' => 255,
 ];
 
+// Comprueba que la cadena sea una fecha real con formato Y-m-d
 function fechaValida(string $f): bool
 {
     $fd = DateTime::createFromFormat('Y-m-d', $f);
@@ -58,6 +69,7 @@ function fechaValida(string $f): bool
 function limpiarPersona(array $in, array $campos, array $opc, array &$err, string $etq, bool $esTitular): array
 {
     $o = [];
+    // Textos: recorta, pasa apellidos/nombres a mayúsculas y controla la longitud
     foreach ($campos as $c => $max) {
         $v = trim((string)($in[$c] ?? ''));
         if (in_array($c, ['apellido_paterno', 'apellido_materno', 'nombres'], true)) {
@@ -69,6 +81,7 @@ function limpiarPersona(array $in, array $campos, array $opc, array &$err, strin
         }
         $o[$c] = $v;
     }
+    // Documentos de identidad: DNI de 8 dígitos; carnet y pasaporte alfanuméricos
     if ($o['dni'] !== '' && !preg_match('/^\d{8}$/', $o['dni'])) {
         $err[] = "$etq: el DNI debe tener 8 dígitos.";
     }
@@ -77,6 +90,7 @@ function limpiarPersona(array $in, array $campos, array $opc, array &$err, strin
             $err[] = "$etq: " . str_replace('_', ' ', $c) . ' solo admite letras y números.';
         }
     }
+    // Fecha de nacimiento (no futura) y sexo dentro de las opciones permitidas
     $f = trim((string)($in['fecha_nacimiento'] ?? ''));
     if ($f !== '' && (!fechaValida($f) || $f > date('Y-m-d'))) {
         $err[] = "$etq: fecha de nacimiento no válida.";
@@ -89,6 +103,7 @@ function limpiarPersona(array $in, array $campos, array $opc, array &$err, strin
     }
     $o['sexo'] = $sx;
 
+    // Campos exclusivos del titular: listas cerradas, extras, correo, teléfonos e ingreso
     if ($esTitular) {
         foreach (['estado_civil' => $opc['civil'], 'num_hijos' => $opc['hijos'], 'nivel_educativo' => $opc['educacion']] as $c => $lista) {
             $v = trim((string)($in[$c] ?? ''));
@@ -123,6 +138,7 @@ function limpiarPersona(array $in, array $campos, array $opc, array &$err, strin
     return $o;
 }
 
+// Indica si todos los campos (salvo los ignorados) están vacíos
 function filaVacia(array $p, array $ignorar = []): bool
 {
     foreach ($p as $k => $v) {
@@ -133,6 +149,7 @@ function filaVacia(array $p, array $ignorar = []): bool
     return true;
 }
 
+// Estado inicial del formulario: opciones, errores y valores vacíos por defecto
 $opc = ['sexos' => $SEXOS, 'civil' => $CIVIL, 'hijos' => $HIJOS, 'educacion' => $EDUCACION, 'extra' => $CAMPOS_TITULAR];
 $errores = [];
 
@@ -144,6 +161,7 @@ $conyuge = ['tipo' => ''] + array_fill_keys(array_merge(array_keys($CAMPOS_PERSO
 $hijos = [];
 $emergencia = [];
 
+// Procesamiento POST: valida CSRF y permisos, y luego cada sección del formulario
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!hash_equals($_SESSION['csrf'], $_POST['csrf'] ?? '')) {
         $errores[] = 'Sesión inválida, recarga la página.';
@@ -151,8 +169,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errores[] = 'No tienes permiso para realizar esta acción.';
     }
 
+    // Datos del empleado (titular)
     $fd = limpiarPersona($_POST, $CAMPOS_PERSONA, $opc, $errores, 'Empleado', true);
 
+    // Derechohabiente (cónyuge o concubino): si hay datos, exige tipo, apellido paterno y nombres
     $in = $_POST['conyuge'] ?? [];
     $conyuge = limpiarPersona(is_array($in) ? $in : [], $CAMPOS_PERSONA, $opc, $errores, 'Derechohabiente', false);
     $conyuge['tipo'] = trim((string)($in['tipo'] ?? ''));
@@ -167,6 +187,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errores[] = 'Derechohabiente: apellido paterno y nombres son obligatorios.';
     }
 
+    // Hijos: se limitan a MAX_HIJOS, se ignoran filas vacías y se exigen datos mínimos
     $n = 0;
     foreach ((array)($_POST['hijos'] ?? []) as $h) {
         if (!is_array($h) || ++$n > MAX_HIJOS) {
@@ -182,6 +203,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $hijos[] = $p;
     }
 
+    // Contactos de emergencia: límite MAX_EMERGENCIA, longitudes, nombre obligatorio y teléfonos válidos
     $n = 0;
     foreach ((array)($_POST['emergencia'] ?? []) as $em) {
         if (!is_array($em) || ++$n > MAX_EMERGENCIA) {
@@ -209,6 +231,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $emergencia[] = $r;
     }
 
+    // Validaciones generales del empleado: nombre, documento obligatorio y DNI no duplicado
     if ($fd['apellido_paterno'] === '' || $fd['nombres'] === '') {
         $errores[] = 'Empleado: apellido paterno y nombres son obligatorios.';
     }
@@ -224,8 +247,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
+    // Sin errores: guarda en transacción (fechas vacías pasan a NULL)
     if (!$errores) {
-        $fechas = ['fecha_nacimiento', 'fecha_ingreso'];
+        $fechas =  ['fecha_nacimiento', 'fecha_ingreso'];
         $vals = [];
         foreach ($fd as $k => $v) {
             $vals[$k] = ($v === '' && in_array($k, $fechas, true)) ? null : $v;
@@ -233,6 +257,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $conexion->begin_transaction();
         try {
             $cols = array_keys($vals);
+            // Edición: actualiza la ficha y borra derechohabientes/emergencia para reinsertarlos
             if ($id) {
                 $set = implode(',', array_map(fn($c) => "`$c`=?", $cols));
                 $s = $conexion->prepare("UPDATE personal SET $set WHERE id=?");
@@ -246,7 +271,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $x->execute();
                 }
             } else {
-                $lista = implode(',', array_map(fn($c) => "`$c`", $cols));
+                // Alta: inserta la ficha y obtiene el nuevo id
+                $lista =  implode(',', array_map(fn($c) => "`$c`", $cols));
                 $marc = implode(',', array_fill(0, count($cols), '?'));
                 $s = $conexion->prepare("INSERT INTO personal ($lista) VALUES ($marc)");
                 $params = array_values($vals);
@@ -255,6 +281,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $id = $conexion->insert_id;
             }
 
+            // Inserta cónyuge/concubino e hijos en derechohabientes
             $ins = $conexion->prepare("INSERT INTO personal_derechohabientes (personal_id,tipo,apellido_paterno,apellido_materno,nombres,dni,carnet_extranjeria,pasaporte,fecha_nacimiento,sexo) VALUES (?,?,?,?,?,?,?,?,?,?)");
             $tipos = 'isssssssss';
             $ins2 = function (string $tipo, array $p) use ($ins, $id, $tipos) {
@@ -269,6 +296,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $ins2('Hijo(a)', $h);
             }
 
+            // Inserta los contactos de emergencia y confirma la transacción
             $em = $conexion->prepare("INSERT INTO personal_emergencia (personal_id,nombres,celular,fijo,parentesco) VALUES (?,?,?,?,?)");
             foreach ($emergencia as $r) {
                 $em->bind_param('issss', $id, $r['nombres'], $r['celular'], $r['fijo'], $r['parentesco']);
@@ -279,12 +307,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             header('Location: rrhh.php');
             exit;
         } catch (Throwable $ex) {
+            // Ante cualquier fallo se revierte todo
             $conexion->rollback();
             $errores[] = 'No se pudo guardar la ficha; no se hicieron cambios.';
         }
     }
 } elseif ($id) {
-    $s = $conexion->prepare("SELECT * FROM personal WHERE id = ?");
+    // GET con id: carga la ficha, sus derechohabientes y contactos de emergencia
+    $s =  $conexion->prepare("SELECT * FROM personal WHERE id = ?");
     $s->bind_param('i', $id);
     $s->execute();
     $fila = $s->get_result()->fetch_assoc();
@@ -311,6 +341,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $emergencia = $s->get_result()->fetch_all(MYSQLI_ASSOC);
 }
 
+// Genera las opciones <option> de un select, marcando la seleccionada
 function opciones(array $lista, string $sel, string $vacio = '— Seleccionar —'): string
 {
     $h = '<option value="">' . e($vacio) . '</option>';
@@ -319,10 +350,12 @@ function opciones(array $lista, string $sel, string $vacio = '— Seleccionar �
     }
     return $h;
 }
+// Genera un campo de formulario (etiqueta + input) con valores escapados
 function campo(string $etq, string $nombre, string $valor, string $extra = '', string $tipo = 'text'): string
 {
     return '<div class="form-grupo"><label>' . e($etq) . '</label><input type="' . $tipo . '" name="' . e($nombre) . '" value="' . e($valor) . '" ' . $extra . '></div>';
 }
+// Genera el bloque de campos de una persona; $pre es el prefijo del name (p. ej. hijos[0])
 function bloquePersona(string $pre, array $p, array $SEXOS): string
 {
     $n = fn($c) => $pre === '' ? $c : "{$pre}[$c]";
@@ -337,6 +370,7 @@ function bloquePersona(string $pre, array $p, array $SEXOS): string
     $h .= '<div class="form-grupo"><label>Sexo</label><select name="' . e($n('sexo')) . '">' . opciones($SEXOS, $p['sexo'] ?? '') . '</select></div>';
     return $h . '</div>';
 }
+// Fila repetible de un hijo(a), con botón Quitar si es editable
 function filaHijo($i, array $p, array $SEXOS, bool $editable): string
 {
     $h = '<div class="ficha-item"><div class="ficha-item-cab"><strong>Hijo(a)</strong>';
@@ -345,6 +379,7 @@ function filaHijo($i, array $p, array $SEXOS, bool $editable): string
     }
     return $h . '</div>' . bloquePersona("hijos[$i]", $p, $SEXOS) . '</div>';
 }
+// Fila repetible de un contacto de emergencia, con botón Quitar si es editable
 function filaEmergencia($i, array $p, bool $editable): string
 {
     $h = '<div class="ficha-item"><div class="ficha-item-cab"><strong>Contacto</strong>';
@@ -359,9 +394,11 @@ function filaEmergencia($i, array $p, bool $editable): string
     return $h . '</div></div>';
 }
 
+// Cabecera común del layout; desde aquí comienza el HTML
 require __DIR__ . '/layout_inicio.php';
 $nombreTitular = trim($fd['apellido_paterno'] . ' ' . $fd['apellido_materno'] . ' ' . $fd['nombres']);
 ?>
+<!-- Encabezado: título, imprimir y volver -->
 
 <div class="prov-cabecera">
     <div>
@@ -374,20 +411,24 @@ $nombreTitular = trim($fd['apellido_paterno'] . ' ' . $fd['apellido_materno'] . 
     </div>
 </div>
 
+<?php /* Lista de errores de validación */ ?>
 <?php if ($errores): ?>
     <div class="alerta err"><ul class="lista-errores"><?php foreach ($errores as $x): ?><li><?= e($x) ?></li><?php endforeach; ?></ul></div>
 <?php endif; ?>
 
+<!-- Formulario principal; el fieldset se deshabilita en modo solo lectura -->
 <form method="POST" class="ficha" autocomplete="off">
     <input type="hidden" name="csrf" value="<?= e($_SESSION['csrf']) ?>">
     <input type="hidden" name="id" value="<?= (int)$id ?>">
     <fieldset <?= $editable ? '' : 'disabled' ?>>
 
+        <!-- Sección: datos del empleado -->
         <div class="card">
             <h2>Información del empleado</h2>
             <?= bloquePersona('', $fd, $SEXOS) ?>
         </div>
 
+        <!-- Sección: estado civil y número de hijos -->
         <div class="card">
             <h2>Estado civil y familia</h2>
             <div class="ficha-grid">
@@ -396,6 +437,7 @@ $nombreTitular = trim($fd['apellido_paterno'] . ' ' . $fd['apellido_materno'] . 
             </div>
         </div>
 
+        <!-- Sección: domicilio -->
         <div class="card">
             <h2>Domicilio</h2>
             <div class="ficha-grid">
@@ -406,6 +448,7 @@ $nombreTitular = trim($fd['apellido_paterno'] . ' ' . $fd['apellido_materno'] . 
             </div>
         </div>
 
+        <!-- Sección: teléfonos y correo -->
         <div class="card">
             <h2>Teléfonos y correo</h2>
             <div class="ficha-grid">
@@ -415,6 +458,7 @@ $nombreTitular = trim($fd['apellido_paterno'] . ' ' . $fd['apellido_materno'] . 
             </div>
         </div>
 
+        <!-- Sección: puesto de trabajo y datos bancarios -->
         <div class="card">
             <h2>Puesto de trabajo y datos bancarios</h2>
             <div class="ficha-grid">
@@ -428,6 +472,7 @@ $nombreTitular = trim($fd['apellido_paterno'] . ' ' . $fd['apellido_materno'] . 
             </div>
         </div>
 
+        <!-- Sección: nivel educativo y profesión -->
         <div class="card">
             <h2>Nivel educativo y profesión</h2>
             <div class="ficha-grid">
@@ -436,6 +481,7 @@ $nombreTitular = trim($fd['apellido_paterno'] . ' ' . $fd['apellido_materno'] . 
             </div>
         </div>
 
+        <!-- Sección: contactos de emergencia (filas dinámicas) -->
         <div class="card">
             <h2>En caso de emergencia llamar a</h2>
             <div id="lista-emergencia">
@@ -444,12 +490,14 @@ $nombreTitular = trim($fd['apellido_paterno'] . ' ' . $fd['apellido_materno'] . 
             <?php if ($editable): ?><button type="button" class="btn-sec" id="add-emergencia">+ Agregar contacto</button><?php endif; ?>
         </div>
 
+        <!-- Sección: derechohabiente cónyuge o concubino(a) -->
         <div class="card">
             <h2>Información de derechohabientes · Cónyuge o concubino(a)</h2>
             <div class="form-grupo" style="max-width:260px"><label>Tipo</label><select name="conyuge[tipo]"><?= opciones($TIPOS_DH, $conyuge['tipo'], '— Ninguno —') ?></select></div>
             <?= bloquePersona('conyuge', $conyuge, $SEXOS) ?>
         </div>
 
+        <!-- Sección: hijos (filas dinámicas) -->
         <div class="card">
             <h2>Información de los hijos</h2>
             <div id="lista-hijos">
@@ -458,21 +506,24 @@ $nombreTitular = trim($fd['apellido_paterno'] . ' ' . $fd['apellido_materno'] . 
             <?php if ($editable): ?><button type="button" class="btn-sec" id="add-hijo">+ Agregar hijo(a)</button><?php endif; ?>
         </div>
 
+        <?php /* Botón guardar solo si es editable */ ?>
         <?php if ($editable): ?>
         <div class="no-imprimir"><button type="submit">Guardar ficha</button></div>
         <?php endif; ?>
     </fieldset>
 </form>
 
+<?php /* Plantillas de filas nuevas y script para agregar/quitar hijos y contactos (solo editable) */ ?>
 <?php if ($editable): ?>
 <template id="tpl-hijo"><?= filaHijo('__I__', [], $SEXOS, true) ?></template>
 <template id="tpl-emergencia"><?= filaEmergencia('__I__', [], true) ?></template>
 <script>
+    // Configura una lista dinámica: agrega filas desde la plantilla, las quita y respeta el máximo
     function configurar(listaId, tplId, btnId, max) {
         const lista = document.getElementById(listaId);
         const tpl = document.getElementById(tplId);
         const btn = document.getElementById(btnId);
-        let n = lista.children.length + 100;
+        let n = lista.children.length + 100; // índice alto para no chocar con las filas existentes
         const refrescar = () => { btn.hidden = lista.children.length >= max; };
         btn.addEventListener("click", () => {
             if (lista.children.length >= max) return;
@@ -485,9 +536,11 @@ $nombreTitular = trim($fd['apellido_paterno'] . ' ' . $fd['apellido_materno'] . 
         });
         refrescar();
     }
+    // Inicializa las listas de hijos y de contactos con sus límites
     configurar("lista-hijos", "tpl-hijo", "add-hijo", <?= MAX_HIJOS ?>);
     configurar("lista-emergencia", "tpl-emergencia", "add-emergencia", <?= MAX_EMERGENCIA ?>);
 </script>
 <?php endif; ?>
 
+<?php /* Pie común del layout */ ?>
 <?php require __DIR__ . '/layout_fin.php'; ?>

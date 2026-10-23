@@ -1,4 +1,5 @@
 <?php
+// Conexión MySQLi a la base de datos extranet_sbc; la usan los demás scripts con require.
 //Configuramos los datos de nuestro servidor de conexion, sea local, como tmb hosting
 $host='localhost';
 $basededatos ='extranet_sbc';

@@ -1,6 +1,8 @@
 <?php
+// Cabecera de la plantilla común: sesión, permisos del usuario, menú lateral y apertura del contenido.
 // Plantilla común: requiere $paginaActiva y $tituloPagina antes de incluirla
 require_once __DIR__ . '/auth.php';
+// Banderas de permiso que determinan qué opciones del menú se muestran
 $esAdmin = (int)($_SESSION['rol_id'] ?? 0) === 1;
 $veUsuarios = puede('Usuarios y roles', 'ver');
 $creaUsuarios = puede('Usuarios y roles', 'crear');
@@ -8,9 +10,11 @@ $veManuales = puede('Manuales', 'ver');
 $adminManuales = puede('Manuales', 'crear') || puede('Manuales', 'editar') || puede('Manuales', 'eliminar');
 $veProveedores = puede('Proveedores', 'ver');
 $veRRHH = puede('Recursos Humanos', 'ver');
+// Lista de manuales y manual activo (solo en la página de manuales)
 $manuales = require __DIR__ . '/manuales_lista.php';
 $manualActivo = $paginaActiva === 'manuales' ? (string)($_GET['m'] ?? array_key_first($manuales)) : null;
 ?>
+<?php /* Cabecera HTML y hojas de estilo */ ?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -25,6 +29,7 @@ $manualActivo = $paginaActiva === 'manuales' ? (string)($_GET['m'] ?? array_key_
 <div class="layout">
     <aside class="sidebar">
         <div class="marca">Extranet <span>SBC</span></div>
+        <!-- Menú lateral: cada enlace aparece solo si el usuario tiene el permiso -->
         <nav>
             <a href="dashboard.php" class="<?= $paginaActiva === 'dashboard' ? 'activo' : '' ?>">Inicio</a>
             <?php if ($veUsuarios): ?>
@@ -46,6 +51,7 @@ $manualActivo = $paginaActiva === 'manuales' ? (string)($_GET['m'] ?? array_key_
                 <a href="rrhh.php" class="<?= $paginaActiva === 'rrhh' ? 'activo' : '' ?>">Recursos Humanos</a>
             <?php endif; ?>
             <?php if ($veManuales): ?>
+                <!-- Submenú desplegable con un enlace por cada manual -->
                 <button type="button" class="grupo-titulo grupo-toggle" id="toggle-manuales" aria-expanded="true" aria-controls="submenu-manuales">
                     <span>Manuales</span><span class="flecha" aria-hidden="true">▾</span>
                 </button>
@@ -60,12 +66,14 @@ $manualActivo = $paginaActiva === 'manuales' ? (string)($_GET['m'] ?? array_key_
                 </div>
                 <script>
                 (function () {
+                    // Abre/cierra el submenú de manuales y recuerda el estado en localStorage
                     var b = document.getElementById('toggle-manuales'), s = document.getElementById('submenu-manuales');
                     function set(abierto) {
                         b.setAttribute('aria-expanded', abierto);
                         s.hidden = !abierto;
                         try { localStorage.setItem('menuManuales', abierto ? '1' : '0'); } catch (e) {}
                     }
+                    // Restaura el estado guardado (abierto por defecto)
                     var g = null; try { g = localStorage.getItem('menuManuales'); } catch (e) {}
                     set(g !== '0');
                     b.addEventListener('click', function () { set(b.getAttribute('aria-expanded') !== 'true'); });
@@ -73,6 +81,8 @@ $manualActivo = $paginaActiva === 'manuales' ? (string)($_GET['m'] ?? array_key_
                 </script>
             <?php endif; ?>
         </nav>
+        <!-- Enlace para cerrar sesión -->
         <a href="logout.php" class="salir">Cerrar sesión</a>
     </aside>
+    <!-- Aquí empieza el contenido de cada página; se cierra en layout_fin.php -->
     <main class="contenido">

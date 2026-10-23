@@ -1,4 +1,5 @@
 <?php
+// Gestión de usuarios: listado, creación, edición y activación/desactivación según permisos.
 require __DIR__ . '/auth.php';
 require __DIR__ . '/bd_conexion.php';
 
@@ -10,12 +11,14 @@ $puedeCrear = puede('Usuarios y roles', 'crear');
 $puedeEditar = puede('Usuarios y roles', 'editar');
 $esAdminSesion = (int)($_SESSION['rol_id'] ?? 0) === 1;
 
+// Token CSRF de sesión y función e() para escapar HTML
 if (empty($_SESSION['csrf'])) {
     $_SESSION['csrf'] = bin2hex(random_bytes(32));
 }
 
 function e($v) { return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
 
+// Roles disponibles y sus nombres
 $roles = $conexion->query("SELECT id, nombre FROM roles ORDER BY id")->fetch_all(MYSQLI_ASSOC);
 $rolesValidos = array_map('intval', array_column($roles, 'id'));
 $rolesNombre = array_column($roles, 'nombre', 'id');
@@ -27,6 +30,7 @@ if (!$esAdminSesion) {
 $mensaje = '';
 $error = '';
 
+// Procesamiento POST: valida CSRF y luego ejecuta la acción solicitada
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!hash_equals($_SESSION['csrf'], $_POST['csrf'] ?? '')) {
         http_response_code(400);
@@ -35,6 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $accion = $_POST['accion'] ?? '';
 
+    // Averigua si el usuario objetivo es administrador
     $idObjetivo = (int)($_POST['id'] ?? 0);
     $objetivoEsAdmin = false;
     if ($idObjetivo > 0) {
@@ -44,6 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $objetivoEsAdmin = (int)($q->get_result()->fetch_assoc()['rol_id'] ?? 0) === 1;
     }
 
+    // Control de permisos por acción
     if ($accion === 'crear' && !$puedeCrear) {
         $error = 'No tienes permiso para crear usuarios.';
     } elseif (in_array($accion, ['editar', 'toggle_estado'], true) && !$puedeEditar) {
@@ -51,6 +57,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif (in_array($accion, ['editar', 'toggle_estado'], true) && $objetivoEsAdmin && !$esAdminSesion) {
         $error = 'Solo un administrador puede modificar a otro administrador.';
     } elseif ($accion === 'crear') {
+        // Crear: valida datos, comprueba que el usuario no exista e inserta con contraseña cifrada
         $nombre  = trim($_POST['nombre'] ?? '');
         $usuario = trim($_POST['usuario'] ?? '');
         $email   = trim($_POST['email'] ?? '');
@@ -74,6 +81,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
     } elseif ($accion === 'toggle_estado') {
+        // Alternar estado: activo <-> inactivo (no se permite sobre uno mismo)
         $id = (int)($_POST['id'] ?? 0);
         if ($id === (int)$_SESSION['id_usuario']) {
             $error = 'No puedes desactivarte a ti mismo.';
@@ -84,6 +92,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $mensaje = 'Estado del usuario actualizado.';
         }
     } elseif ($accion === 'editar') {
+        // Editar: valida datos y restricciones, actualiza el usuario y la contraseña solo si se indicó una nueva
         $id      = (int)($_POST['id'] ?? 0);
         $nombre  = trim($_POST['nombre'] ?? '');
         $usuario = trim($_POST['usuario'] ?? '');
@@ -121,10 +130,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+// Listado de usuarios para la tabla
 $usuarios = $conexion->query(
     "SELECT id, nombre, usuario, email, rol_id, estado FROM usuarios ORDER BY id"
 )->fetch_all(MYSQLI_ASSOC);
 
+// Datos de la página y carga del layout
 $paginaActiva = 'usuarios';
 $tituloPagina = 'Gestión de usuarios';
 require __DIR__ . '/layout_inicio.php';
@@ -133,9 +144,11 @@ require __DIR__ . '/layout_inicio.php';
 <h1>Gestión de usuarios</h1>
 <p class="subtitulo">Crea usuarios y asigna sus roles.</p>
 
+<?php /* Alertas de resultado */ ?>
 <?php if ($mensaje): ?><div class="alerta ok"><?= e($mensaje) ?></div><?php endif; ?>
 <?php if ($error): ?><div class="alerta err"><?= e($error) ?></div><?php endif; ?>
 
+<!-- Formulario de creación (solo con permiso de crear) -->
 <?php if ($puedeCrear): ?>
 <div class="card">
     <h2>Crear usuario</h2>
@@ -156,6 +169,7 @@ require __DIR__ . '/layout_inicio.php';
 </div>
 <?php endif; ?>
 
+<!-- Tabla de usuarios con acciones Editar y Activar/Desactivar según permisos -->
 <div class="card">
     <h2>Usuarios registrados</h2>
     <div class="tabla-wrap">
@@ -196,6 +210,7 @@ require __DIR__ . '/layout_inicio.php';
     </div>
 </div>
 
+<!-- Ventana modal para editar un usuario -->
 <dialog id="modalEditar">
     <form method="POST">
         <h2>Editar usuario</h2>
@@ -227,6 +242,7 @@ require __DIR__ . '/layout_inicio.php';
 </dialog>
 
 <script>
+// Al pulsar Editar, rellena el modal con los datos del usuario y lo abre
 const modal = document.getElementById('modalEditar');
 document.querySelectorAll('.btn-editar').forEach(b => b.addEventListener('click', () => {
     const d = b.dataset;
@@ -239,6 +255,7 @@ document.querySelectorAll('.btn-editar').forEach(b => b.addEventListener('click'
     modal.querySelector('input[name=password]').value = '';
     modal.showModal();
 }));
+// Cierra el modal con Cancelar o al hacer clic fuera
 document.getElementById('cerrarModal').addEventListener('click', () => modal.close());
 modal.addEventListener('click', e => { if (e.target === modal) modal.close(); });
 </script>

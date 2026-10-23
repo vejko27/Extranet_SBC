@@ -1,8 +1,11 @@
 <?php
+// Panel principal: muestra tarjetas de acceso según los permisos del usuario.
 $paginaActiva = 'dashboard';
 $tituloPagina = 'Panel Principal';
+// Carga el layout (sesión, menú y variables de permisos como $veUsuarios)
 require __DIR__ . '/layout_inicio.php';
 
+// Arma la lista de tarjetas: solo se agregan los módulos permitidos
 $tarjetas = [];
 if ($veUsuarios)    $tarjetas[] = ['usuarios.php', 'Usuarios y roles', 'Crea usuarios y asigna sus roles.'];
 if ($creaUsuarios)  $tarjetas[] = ['registrar.php', 'Registrar usuario', 'Formulario rápido de alta.'];
@@ -13,9 +16,11 @@ if ($veProveedores) $tarjetas[] = ['proveedores.php', 'Proveedores', 'Listado de
 if ($veRRHH)        $tarjetas[] = ['rrhh.php', 'Recursos Humanos', 'Fichas de datos del personal.'];
 ?>
 
+<?php /* Saludo al usuario en sesión */ ?>
 <h1>Bienvenido, <?= htmlspecialchars($_SESSION['nombre']) ?></h1>
 <p class="subtitulo">Selecciona una opción para comenzar.</p>
 
+<?php /* Cuadrícula de tarjetas o mensaje si no hay módulos asignados */ ?>
 <?php if ($tarjetas): ?>
 <div class="grid">
     <?php foreach ($tarjetas as [$url, $titulo, $desc]): ?>
