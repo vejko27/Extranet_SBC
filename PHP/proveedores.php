@@ -152,8 +152,8 @@ $filas = $st->get_result()->fetch_all(MYSQLI_ASSOC);
 $total = count($filas);
 $homologados = count(array_filter($filas, fn($p) => $p['status'] === 'HOMOLOGADO'));
 $porcentaje = $total ? (int)round($homologados * 100 / $total) : 0;
-$ultima = $conexion->query("SELECT MAX(actualizado) f FROM proveedores WHERE YEAR(creado) = " . (int)$anio)->fetch_assoc()['f'];
-$fecha = $ultima ? date('d/m/Y', strtotime($ultima)) : date('d/m/Y');
+date_default_timezone_set('America/Lima');
+$fecha = date('d/m/Y');
 $puedeModificar = $puedeEditar || $puedeEliminar;
 
 function clase($v) {
