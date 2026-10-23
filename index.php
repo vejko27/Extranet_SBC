@@ -19,7 +19,7 @@ $err = $_GET['error'] ?? '';
     <title>Extranet de SBC_TRANSPORT</title>
     <link rel="icon" type="image/x-icon" href="icono_de_navegación/Icono_de_pestana_de_navegacion.ico">
     <link rel="shortcut icon" href="icono_de_navegación/Icono_de_pestana_de_navegacion.ico">
-    <link rel="stylesheet" href="Style.css?v=<?= filemtime(__DIR__ . '/Style.css') ?>" />
+    <link rel="stylesheet" href="estilos/Style.css?v=<?= filemtime(__DIR__ . '/estilos/Style.css') ?>" />
   </head>
   <body>
     <div class="login-container">

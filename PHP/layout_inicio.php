@@ -18,7 +18,7 @@ $manualActivo = $paginaActiva === 'manuales' ? (string)($_GET['m'] ?? array_key_
     <title><?= htmlspecialchars($tituloPagina) ?></title>
     <link rel="icon" type="image/x-icon" href="../icono_de_navegación/Icono_de_pestana_de_navegacion.ico">
     <link rel="shortcut icon" href="../icono_de_navegación/Icono_de_pestana_de_navegacion.ico">
-    <link rel="stylesheet" href="../style_panel.css?v=<?= filemtime(dirname(__DIR__) . '/style_panel.css') ?>">
+    <link rel="stylesheet" href="../estilos/style_panel.css?v=<?= filemtime(dirname(__DIR__) . '/estilos/style_panel.css') ?>">
 </head>
 <body>
 <div class="layout">
