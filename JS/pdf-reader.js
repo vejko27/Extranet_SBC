@@ -1,4 +1,4 @@
-pdfjsLib.GlobalWorkerOptions.workerSrc = "../pdfjs/pdf.worker.min.js";
+pdfjsLib.GlobalWorkerOptions.workerSrc = new URL("../pdfjs/pdf.worker.min.js", document.currentScript.src).href;
 
 window.renderPdfReader = async (reader) => {
   const generation = (reader.renderGeneration || 0) + 1;
