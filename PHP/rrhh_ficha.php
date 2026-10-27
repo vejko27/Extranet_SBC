@@ -35,6 +35,8 @@ $SEXOS = ['Masculino', 'Femenino'];
 $CIVIL = ['Soltero(a)', 'Casado(a)', 'Divorciado(a)', 'Viudo(a)'];
 $HIJOS = ['Ninguno', 'Uno', 'Dos', 'Tres', 'Más de tres'];
 $TIPOS_DH = ['Cónyuge', 'Concubino(a)'];
+$BANCOS = ['BANCO BCP', 'BANCO BBVA', 'BANCO SCOTIABANK'];
+$AFPS = ['PRIMA', 'HABITAT', 'PROFUTURO', 'INTEGRA'];
 $EDUCACION = [
     'Sin Educación Formal', 'Educación Primaria Completa', 'Educación Primaria Incompleta',
     'Educación Secundaria Completa', 'Educación Secundaria Incompleta', 'Educación Técnica Completa',
@@ -55,7 +57,7 @@ $CAMPOS_PERSONA = [
 $CAMPOS_TITULAR = [
     'via' => 150, 'distrito' => 80, 'provincia' => 80, 'departamento' => 80,
     'telefono_fijo' => 20, 'celular' => 20, 'email' => 120, 'puesto_trabajo' => 100, 'sede_labora' => 150,
-    'cuenta_bancaria' => 30, 'banco' => 60, 'banco_cts' => 60, 'cuenta_cts' => 30, 'profesion' => 255,
+    'cuenta_bancaria' => 30, 'cci_bancaria' => 20, 'banco' => 60, 'banco_cts' => 60, 'cuenta_cts' => 30, 'cci_cts' => 20, 'tipo_afp' => 20, 'cuspp' => 12, 'profesion' => 255,
 ];
 
 // Comprueba que la cadena sea una fecha real con formato Y-m-d
@@ -121,6 +123,25 @@ function limpiarPersona(array $in, array $campos, array $opc, array &$err, strin
             }
             $o[$c] = $v;
         }
+        foreach (['banco', 'banco_cts'] as $c) {
+            if ($o[$c] !== '' && !in_array($o[$c], $opc['bancos'], true)) {
+                $err[] = "$etq: selecciona un banco de la lista en " . str_replace('_', ' ', $c) . '.';
+                $o[$c] = '';
+            }
+        }
+        if ($o['tipo_afp'] !== '' && !in_array($o['tipo_afp'], $opc['afps'], true)) {
+            $err[] = "$etq: selecciona un tipo de AFP de la lista.";
+            $o['tipo_afp'] = '';
+        }
+        $o['cuspp'] = strtoupper($o['cuspp']);
+        if ($o['cuspp'] !== '' && !preg_match('/^[A-Z0-9]{12}$/', $o['cuspp'])) {
+            $err[] = "$etq: el CUSPP debe tener 12 caracteres alfanuméricos.";
+        }
+        foreach (['cci_bancaria', 'cci_cts'] as $c) {
+            if ($o[$c] !== '' && !preg_match('/^\d{20}$/', $o[$c])) {
+                $err[] = "$etq: el " . str_replace('_', ' ', strtoupper($c)) . ' debe tener 20 dígitos.';
+            }
+        }
         if ($o['email'] !== '' && !filter_var($o['email'], FILTER_VALIDATE_EMAIL)) {
             $err[] = "$etq: correo electrónico no válido.";
         }
@@ -150,7 +171,7 @@ function filaVacia(array $p, array $ignorar = []): bool
 }
 
 // Estado inicial del formulario: opciones, errores y valores vacíos por defecto
-$opc = ['sexos' => $SEXOS, 'civil' => $CIVIL, 'hijos' => $HIJOS, 'educacion' => $EDUCACION, 'extra' => $CAMPOS_TITULAR];
+$opc = ['sexos' => $SEXOS, 'civil' => $CIVIL, 'hijos' => $HIJOS, 'educacion' => $EDUCACION, 'bancos' => $BANCOS, 'afps' => $AFPS, 'extra' => $CAMPOS_TITULAR];
 $errores = [];
 
 $fd = array_fill_keys(array_merge(
@@ -426,6 +447,9 @@ $nombreTitular = trim($fd['apellido_paterno'] . ' ' . $fd['apellido_materno'] . 
         <div class="card">
             <h2>Información del empleado</h2>
             <?= bloquePersona('', $fd, $SEXOS) ?>
+            <div class="ficha-grid">
+                <?= campo('Puesto de trabajo al que será asignado', 'puesto_trabajo', $fd['puesto_trabajo'], 'maxlength="100"') ?>
+            </div>
         </div>
 
         <!-- Sección: estado civil y número de hijos -->
@@ -458,17 +482,27 @@ $nombreTitular = trim($fd['apellido_paterno'] . ' ' . $fd['apellido_materno'] . 
             </div>
         </div>
 
-        <!-- Sección: puesto de trabajo y datos bancarios -->
+        <!-- Sección: sede, ingreso y datos bancarios -->
         <div class="card">
-            <h2>Puesto de trabajo y datos bancarios</h2>
+            <h2>Sede y datos bancarios</h2>
             <div class="ficha-grid">
-                <?= campo('Puesto de trabajo', 'puesto_trabajo', $fd['puesto_trabajo'], 'maxlength="100"') ?>
-                <?= campo('Sede donde labora (Av./Jr./Calle/Psje.)', 'sede_labora', $fd['sede_labora'], 'maxlength="150"') ?>
+                <?= campo('Sede donde labora', 'sede_labora', $fd['sede_labora'], 'maxlength="150"') ?>
                 <?= campo('Fecha de ingreso a planilla', 'fecha_ingreso', $fd['fecha_ingreso'], '', 'date') ?>
+                <div class="form-grupo"><label>Nombre de banco</label><select name="banco"><?= opciones($BANCOS, $fd['banco']) ?></select></div>
                 <?= campo('Número de cuenta bancaria', 'cuenta_bancaria', $fd['cuenta_bancaria'], 'maxlength="30"') ?>
-                <?= campo('Nombre de banco', 'banco', $fd['banco'], 'maxlength="60"') ?>
-                <?= campo('Nombre de banco de CTS', 'banco_cts', $fd['banco_cts'], 'maxlength="60"') ?>
+                <?= campo('CCI de cuenta bancaria', 'cci_bancaria', $fd['cci_bancaria'], 'maxlength="20" inputmode="numeric" pattern="\d{20}" title="20 dígitos"') ?>
+                <div class="form-grupo"><label>Nombre de banco de CTS</label><select name="banco_cts"><?= opciones($BANCOS, $fd['banco_cts']) ?></select></div>
                 <?= campo('Número de cuenta CTS', 'cuenta_cts', $fd['cuenta_cts'], 'maxlength="30"') ?>
+                <?= campo('CCI de cuenta CTS', 'cci_cts', $fd['cci_cts'], 'maxlength="20" inputmode="numeric" pattern="\d{20}" title="20 dígitos"') ?>
+            </div>
+        </div>
+
+        <!-- Sección: sistema de pensiones -->
+        <div class="card">
+            <h2>Sistema de pensiones</h2>
+            <div class="ficha-grid">
+                <div class="form-grupo"><label>Tipo de AFP</label><select name="tipo_afp"><?= opciones($AFPS, $fd['tipo_afp']) ?></select></div>
+                <?= campo('CUSPP', 'cuspp', $fd['cuspp'], 'maxlength="12" pattern="[A-Za-z0-9]{12}" title="12 caracteres alfanuméricos" style="text-transform:uppercase"') ?>
             </div>
         </div>
 
