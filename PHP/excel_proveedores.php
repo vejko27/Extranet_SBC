@@ -53,10 +53,12 @@ function xlsx_leer_zip(string $bin, int $maxBytes = 30000000): array
     return $archivos;
 }
 
-// Parsea XML con SimpleXML quitando espacios de nombres y sin acceso a red
+// Normaliza los espacios de nombres para leer XML de Excel con SimpleXML sin acceso a red
 function xlsx_xml(string $xml): SimpleXMLElement
 {
-    $xml = preg_replace('/\sxmlns(:\w+)?="[^"]*"/', '', $xml);
+    $xml = preg_replace('/\sxmlns(?::[\w.-]+)?=(["\']).*?\1/s', '', $xml);
+    $xml = preg_replace('/(<\/?)[A-Za-z_][\w.-]*:/', '$1', $xml);
+    $xml = preg_replace('/\s[A-Za-z_][\w.-]*:([A-Za-z_][\w.-]*)=/', ' $1=', $xml);
     $x = simplexml_load_string($xml, 'SimpleXMLElement', LIBXML_NONET);
     if (!$x) {
         throw new RuntimeException('El archivo Excel está dañado.');
@@ -85,7 +87,7 @@ function xlsx_filas(string $bin): array
 
     // Determina la ruta de la primera hoja a través de las relaciones del libro
     $hoja = 'xl/worksheets/sheet1.xml';
-    if (preg_match('/<sheet\b[^>]*\br:id="([^"]+)"/', $f['xl/workbook.xml'], $m) && isset($f['xl/_rels/workbook.xml.rels'])) {
+    if (preg_match('/<sheet\b[^>]*\bid="([^"]+)"/', $f['xl/workbook.xml'], $m) && isset($f['xl/_rels/workbook.xml.rels'])) {
         foreach (xlsx_xml($f['xl/_rels/workbook.xml.rels'])->Relationship as $r) {
             if ((string)$r['Id'] === $m[1]) {
                 $t = ltrim((string)$r['Target'], '/');

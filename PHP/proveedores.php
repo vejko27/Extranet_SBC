@@ -23,10 +23,10 @@ if (empty($_SESSION['csrf'])) {
 function e($v) { return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
 
 // Listas de valores permitidos (también sirven para validar los POST)
-$MESES = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SET','OCT','NOV','DIC'];
+$MESES = ['', 'ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SET','OCT','NOV','DIC'];
 $TRI = ['SI','NO','NO APLICA'];
 $STATUS = ['PENDIENTE','HOMOLOGADO'];
-$SINO = ['SI','NO'];
+$SINO = ['', 'SI','NO'];
 
 // Procesamiento POST: valida CSRF y ejecuta la acción; luego redirige (patrón PRG con mensaje flash)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -52,12 +52,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $fi = $_POST['filtros_aplicados'] ?? '';
             $stt = $_POST['status'] ?? '';
             $reg = $_POST['registrado_sistema'] ?? '';
-            // Validación: obligatorios, RUC de 11 dígitos, longitudes máximas y valores de listas
-            if ($razon === '' || !preg_match('/^\d{11}$/', $ruc) || $tipo === '' || mb_strlen($razon) > 200
+            // Las altas exigen los datos identificadores; en ediciones se permiten vacíos por completar.
+            if ($razon === '' || ($ruc === '' ? $nuevo : !preg_match('/^\d{11}$/', $ruc)) || $tipo === '' || mb_strlen($razon) > 200
                 || mb_strlen($tipo) > 40 || mb_strlen($cert) > 60
-                || !in_array($mes, $MESES, true) || !in_array($ac, $TRI, true) || !in_array($dj, $TRI, true)
-                || !in_array($fi, $TRI, true) || !in_array($stt, $STATUS, true) || !in_array($reg, $SINO, true)) {
-                $err = 'Revisa los datos: razón social, RUC de 11 dígitos y tipo son obligatorios.';
+                || !in_array($mes, $MESES, true) || ($nuevo && $mes === '')
+                || !in_array($ac, $TRI, true) || !in_array($dj, $TRI, true)
+                || !in_array($fi, $TRI, true) || !in_array($stt, $STATUS, true)
+                || !in_array($reg, $SINO, true) || ($nuevo && $reg === '')) {
+                $err = 'Revisa los datos: razón social y tipo son obligatorios; el RUC debe tener 11 dígitos cuando se indica.';
             } elseif ($nuevo) {
                 // INSERT de un proveedor nuevo (consulta preparada)
                 $s = $conexion->prepare("INSERT INTO proveedores (razon_social,ruc,tipo,certificado,mes,acuerdo_seguridad,ddjj,filtros_aplicados,status,registrado_sistema) VALUES (?,?,?,?,?,?,?,?,?,?)");
@@ -192,7 +194,8 @@ function clase($v) {
 // Imprime las <option> de un select marcando la seleccionada
 function opciones($filas, $sel = '') {
     foreach ($filas as $o) {
-        echo '<option' . ($o === $sel ? ' selected' : '') . '>' . e($o) . '</option>';
+        $etiqueta = $o === '' ? 'Por completar' : $o;
+        echo '<option value="' . e($o) . '"' . ($o === $sel ? ' selected' : '') . '>' . e($etiqueta) . '</option>';
     }
 }
 
@@ -284,10 +287,10 @@ require __DIR__ . '/layout_inicio.php';
                     <tr>
             <td data-label="N°"><?= $i + 1 ?></td>
             <td data-label="Razón social"><?= e($p['razon_social']) ?></td>
-            <td data-label="RUC"><?= e($p['ruc']) ?></td>
+            <td data-label="RUC"><?= e($p['ruc'] !== '' ? $p['ruc'] : 'Por completar') ?></td>
             <td data-label="Tipo"><?= e($p['tipo']) ?></td>
-            <td data-label="Certificado"><?= e($p['certificado']) ?></td>
-            <td data-label="Mes"><?= e($p['mes']) ?></td>
+            <td data-label="Certificado"><?= e($p['certificado'] !== '' ? $p['certificado'] : 'Por completar') ?></td>
+            <td data-label="Mes"><?= e($p['mes'] !== '' ? $p['mes'] : 'Por completar') ?></td>
             <?php celdaSelect('Acuerdo de seguridad', 'acuerdo_seguridad', $TRI, $p, $puedeEditar); ?>
             <?php celdaSelect('DDJJ', 'ddjj', $TRI, $p, $puedeEditar); ?>
             <?php celdaSelect('Filtros aplicados', 'filtros_aplicados', $TRI, $p, $puedeEditar); ?>
@@ -322,7 +325,7 @@ require __DIR__ . '/layout_inicio.php';
         <input type="hidden" name="accion" value="guardar">
         <input type="hidden" name="id" id="f_id" value="0">
         <div class="form-grupo"><label>Razón social</label><input type="text" name="razon_social" id="f_razon_social" maxlength="200" required></div>
-        <div class="form-grupo"><label>RUC</label><input type="text" name="ruc" id="f_ruc" inputmode="numeric" pattern="\d{11}" maxlength="11" title="11 dígitos" required></div>
+        <div class="form-grupo"><label>RUC</label><input type="text" name="ruc" id="f_ruc" inputmode="numeric" pattern="\d{11}" maxlength="11" title="11 dígitos"></div>
         <div class="form-grupo"><label>Tipo</label><input type="text" name="tipo" id="f_tipo" list="tipos" maxlength="40" required>
             <datalist id="tipos"><option value="TRANSPORTE"><option value="RESGUARDO"></datalist></div>
         <div class="form-grupo"><label>Certificado</label><input type="text" name="certificado" id="f_certificado" maxlength="60"></div>
@@ -345,9 +348,10 @@ require __DIR__ . '/layout_inicio.php';
     function abrir(p) {
         document.getElementById("m_titulo").textContent = p ? "Editar proveedor" : "Agregar proveedor";
         document.getElementById("f_id").value = p ? p.id : 0;
+        document.getElementById("f_ruc").required = !p;
         campos.forEach((c) => {
             const el = document.getElementById("f_" + c);
-            el.value = p ? p[c] : (c === "tipo" ? "TRANSPORTE" : (el.tagName === "SELECT" ? (c === "status" ? "PENDIENTE" : (c === "mes" ? el.options[0].value : "NO")) : ""));
+            el.value = p ? p[c] : (c === "tipo" ? "TRANSPORTE" : (el.tagName === "SELECT" ? (c === "status" ? "PENDIENTE" : (c === "mes" ? "ENE" : "NO")) : ""));
         });
         modal.showModal();
     }
