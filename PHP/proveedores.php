@@ -348,6 +348,7 @@ require __DIR__ . '/layout_inicio.php';
         <input type="hidden" name="accion" value="guardar">
         <input type="hidden" name="id" id="f_id" value="0">
         <div class="form-prov-secciones">
+            <div class="form-prov-columna">
             <section class="form-prov-seccion">
                 <h3>Identificación del proveedor</h3>
                 <div class="form-prov-grid">
@@ -358,6 +359,15 @@ require __DIR__ . '/layout_inicio.php';
                     <div class="form-grupo"><label for="f_certificado">Certificado</label><input type="text" name="certificado" id="f_certificado" maxlength="60"></div>
                 </div>
             </section>
+            <section class="form-prov-seccion">
+                <h3>Cuenta de detracciones</h3>
+                <div class="form-prov-grid">
+                    <div class="form-grupo"><label for="f_banco_detracciones">Banco de la Nación</label><select name="banco_detracciones" id="f_banco_detracciones"><option value="">— Seleccionar —</option><option value="<?= e($BANCO_DETRACCIONES) ?>"><?= e($BANCO_DETRACCIONES) ?></option></select></div>
+                    <div class="form-grupo"><label for="f_cuenta_detracciones">Número de cuenta de detracciones</label><input type="text" name="cuenta_detracciones" id="f_cuenta_detracciones" maxlength="30"></div>
+                </div>
+            </section>
+            </div>
+            <div class="form-prov-columna">
             <section class="form-prov-seccion">
                 <h3>Información bancaria</h3>
                 <div class="form-prov-grid">
@@ -376,13 +386,6 @@ require __DIR__ . '/layout_inicio.php';
                 </div>
             </section>
             <section class="form-prov-seccion">
-                <h3>Cuenta de detracciones</h3>
-                <div class="form-prov-grid">
-                    <div class="form-grupo"><label for="f_banco_detracciones">Banco de la Nación</label><select name="banco_detracciones" id="f_banco_detracciones"><option value="">— Seleccionar —</option><option value="<?= e($BANCO_DETRACCIONES) ?>"><?= e($BANCO_DETRACCIONES) ?></option></select></div>
-                    <div class="form-grupo"><label for="f_cuenta_detracciones">Número de cuenta de detracciones</label><input type="text" name="cuenta_detracciones" id="f_cuenta_detracciones" maxlength="30"></div>
-                </div>
-            </section>
-            <section class="form-prov-seccion">
                 <h3>Homologación</h3>
                 <div class="form-prov-grid">
                     <div class="form-grupo"><label for="f_mes">Mes</label><select name="mes" id="f_mes"><?php opciones($MESES); ?></select></div>
@@ -393,6 +396,7 @@ require __DIR__ . '/layout_inicio.php';
                     <div class="form-grupo"><label for="f_registrado_sistema">Registrado en el sistema</label><select name="registrado_sistema" id="f_registrado_sistema"><?php opciones($SINO); ?></select></div>
                 </div>
             </section>
+            </div>
         </div>
         <div class="modal-acciones">
             <button type="button" class="btn-sec" id="f_cancelar">Cancelar</button>
