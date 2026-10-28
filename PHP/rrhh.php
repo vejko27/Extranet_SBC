@@ -92,6 +92,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $q->bind_param('i', $id);
             $q->execute();
             $archivos = array_column($q->get_result()->fetch_all(MYSQLI_ASSOC), 'archivo');
+            $qf = $conexion->prepare("SELECT foto FROM personal WHERE id = ?");
+            $qf->bind_param('i', $id);
+            $qf->execute();
+            if ($foto = $qf->get_result()->fetch_column()) {
+                $archivos[] = $foto;
+            }
             // Elimina la ficha del personal
             $s = $conexion->prepare("DELETE FROM personal WHERE id = ?");
             $s->bind_param('i', $id);

@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 // Ficha de datos del personal: formulario para crear/editar/ver (solo lectura) una ficha
 // con datos del empleado, domicilio, contacto, banco, emergencia, cónyuge e hijos.
 // Valida y guarda todo en una transacción.
@@ -19,6 +19,13 @@ date_default_timezone_set('America/Lima');
 if (empty($_SESSION['csrf'])) {
     $_SESSION['csrf'] = bin2hex(random_bytes(32));
 }
+// Campos adicionales de la ficha; se crean las columnas que falten en la tabla
+require_once __DIR__ . '/rrhh_campos_extra.php';
+garantizarColumnasExtra($conexion, $CAMPOS_EXTRA);
+if ($conexion->query("SHOW COLUMNS FROM personal LIKE 'foto'")->num_rows === 0) {
+    $conexion->query("ALTER TABLE personal ADD COLUMN foto VARCHAR(40) NOT NULL DEFAULT ''");
+}
+$EXTRA_PLANO = camposExtraPlano($CAMPOS_EXTRA);
 // Escapa texto para imprimirlo de forma segura en HTML
 function e($v) { return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
 
@@ -37,7 +44,7 @@ $CIVIL = ['Soltero(a)', 'Casado(a)', 'Divorciado(a)', 'Viudo(a)'];
 $HIJOS = ['Ninguno', 'Uno', 'Dos', 'Tres', 'Más de tres'];
 $TIPOS_DH = ['Cónyuge', 'Concubino(a)'];
 $BANCOS = ['BANCO BCP', 'BANCO BBVA', 'BANCO SCOTIABANK'];
-$AFPS = ['PRIMA', 'HABITAT', 'PROFUTURO', 'INTEGRA'];
+$AFPS = ['SNP - ONP (DL 19990)', 'SNP (DL 20530)', 'INTEGRA', 'HORIZONTE', 'PROFUTURO', 'PRIMA', 'HABITAT', 'SIN RÉGIMEN PENSIONARIO'];
 $EDUCACION = [
     'Sin Educación Formal', 'Educación Primaria Completa', 'Educación Primaria Incompleta',
     'Educación Secundaria Completa', 'Educación Secundaria Incompleta', 'Educación Técnica Completa',
@@ -58,7 +65,7 @@ $CAMPOS_PERSONA = [
 $CAMPOS_TITULAR = [
     'via' => 150, 'distrito' => 80, 'provincia' => 80, 'departamento' => 80,
     'telefono_fijo' => 20, 'celular' => 20, 'email' => 120, 'puesto_trabajo' => 100, 'sede_labora' => 150,
-    'cuenta_bancaria' => 30, 'cci_bancaria' => 20, 'banco' => 60, 'banco_cts' => 60, 'cuenta_cts' => 30, 'cci_cts' => 20, 'tipo_afp' => 20, 'cuspp' => 12, 'profesion' => 255,
+    'cuenta_bancaria' => 30, 'cci_bancaria' => 20, 'banco' => 60, 'banco_cts' => 60, 'cuenta_cts' => 30, 'cci_cts' => 20, 'tipo_afp' => 40, 'cuspp' => 12, 'profesion' => 255,
 ];
 
 // Comprueba que la cadena sea una fecha real con formato Y-m-d
@@ -131,7 +138,7 @@ function limpiarPersona(array $in, array $campos, array $opc, array &$err, strin
             }
         }
         if ($o['tipo_afp'] !== '' && !in_array($o['tipo_afp'], $opc['afps'], true)) {
-            $err[] = "$etq: selecciona un tipo de AFP de la lista.";
+            $err[] = "$etq: selecciona un régimen pensionario de la lista.";
             $o['tipo_afp'] = '';
         }
         $o['cuspp'] = strtoupper($o['cuspp']);
@@ -156,6 +163,42 @@ function limpiarPersona(array $in, array $campos, array $opc, array &$err, strin
             $err[] = "$etq: fecha de ingreso no válida.";
         }
         $o['fecha_ingreso'] = $fi;
+
+        // Campos adicionales: texto, fechas, Sí/No y listas cerradas
+        foreach ($opc['campos_extra'] as $c => $def) {
+            $v = trim((string)($in[$c] ?? ''));
+            $etiqueta = $def[0];
+            switch ($def[1]) {
+                case 'date':
+                    if ($v !== '' && !fechaValida($v)) {
+                        $err[] = "$etq: fecha no válida en «$etiqueta».";
+                        $v = '';
+                    }
+                    break;
+                case 'sino':
+                case 'select':
+                    $lista = $def[1] === 'sino' ? OPCIONES_SINO : $def[2];
+                    if ($v !== '' && !in_array($v, $lista, true)) {
+                        $err[] = "$etq: valor no válido en «$etiqueta».";
+                        $v = '';
+                    }
+                    break;
+                case 'ruc':
+                    if ($v !== '' && !preg_match('/^\d{11}$/', $v)) {
+                        $err[] = "$etq: el RUC debe tener 11 dígitos.";
+                    }
+                    break;
+                default:
+                    if (mb_strlen($v) > $def[2]) {
+                        $err[] = "$etq: «$etiqueta» es demasiado largo.";
+                        $v = mb_substr($v, 0, $def[2]);
+                    }
+            }
+            $o[$c] = $v;
+        }
+        if ($o['contrato_inicio'] !== '' && $o['contrato_fin'] !== '' && $o['contrato_fin'] < $o['contrato_inicio']) {
+            $err[] = "$etq: el fin del contrato no puede ser anterior a su inicio.";
+        }
     }
     return $o;
 }
@@ -172,16 +215,28 @@ function filaVacia(array $p, array $ignorar = []): bool
 }
 
 // Estado inicial del formulario: opciones, errores y valores vacíos por defecto
-$opc = ['sexos' => $SEXOS, 'civil' => $CIVIL, 'hijos' => $HIJOS, 'educacion' => $EDUCACION, 'bancos' => $BANCOS, 'afps' => $AFPS, 'extra' => $CAMPOS_TITULAR];
+$opc = ['sexos' => $SEXOS, 'civil' => $CIVIL, 'hijos' => $HIJOS, 'educacion' => $EDUCACION, 'bancos' => $BANCOS, 'afps' => $AFPS, 'extra' => $CAMPOS_TITULAR, 'campos_extra' => $EXTRA_PLANO];
 $errores = [];
 
 $fd = array_fill_keys(array_merge(
     array_keys($CAMPOS_PERSONA), array_keys($CAMPOS_TITULAR),
-    ['fecha_nacimiento', 'sexo', 'estado_civil', 'num_hijos', 'nivel_educativo', 'fecha_ingreso']
+    ['fecha_nacimiento', 'sexo', 'estado_civil', 'num_hijos', 'nivel_educativo', 'fecha_ingreso'],
+    array_keys($EXTRA_PLANO)
 ), '');
 $conyuge = ['tipo' => ''] + array_fill_keys(array_merge(array_keys($CAMPOS_PERSONA), ['fecha_nacimiento', 'sexo']), '');
 $hijos = [];
 $emergencia = [];
+
+// Foto actual del empleado (archivo en Documentos_Personal, servido por ver_foto.php)
+const MAX_FOTO = 5 * 1024 * 1024;
+$dirFotos = dirname(__DIR__) . '/Documentos_Personal/';
+$fotoActual = '';
+if ($id) {
+    $q = $conexion->prepare("SELECT foto FROM personal WHERE id = ?");
+    $q->bind_param('i', $id);
+    $q->execute();
+    $fotoActual = (string)($q->get_result()->fetch_column() ?: '');
+}
 
 // Procesamiento POST: valida CSRF y permisos, y luego cada sección del formulario
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -269,13 +324,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
+    // Foto opcional: solo JPG o PNG (se comprueba la firma real del archivo)
+    $fotoNueva = null;
+    $quitarFoto = !empty($_POST['quitar_foto']);
+    $ff = $_FILES['foto'] ?? null;
+    if ($ff && $ff['error'] !== UPLOAD_ERR_NO_FILE) {
+        if ($ff['error'] !== UPLOAD_ERR_OK || $ff['size'] <= 0 || $ff['size'] > MAX_FOTO) {
+            $errores[] = 'La foto debe ser un archivo válido de hasta 5 MB.';
+        } else {
+            $cab = (string)file_get_contents($ff['tmp_name'], false, null, 0, 8);
+            if (str_starts_with($cab, "\xFF\xD8\xFF")) {
+                $fotoNueva = ['tmp' => $ff['tmp_name'], 'ext' => 'jpg'];
+            } elseif (str_starts_with($cab, "\x89PNG\r\n\x1a\n")) {
+                $fotoNueva = ['tmp' => $ff['tmp_name'], 'ext' => 'png'];
+            } else {
+                $errores[] = 'La foto debe ser JPG o PNG.';
+            }
+        }
+    }
+
     // Sin errores: guarda en transacción (fechas vacías pasan a NULL)
     if (!$errores) {
-        $fechas =  ['fecha_nacimiento', 'fecha_ingreso'];
+        $fechas = ['fecha_nacimiento', 'fecha_ingreso'];
+        foreach ($EXTRA_PLANO as $c => $def) {
+            if ($def[1] === 'date') {
+                $fechas[] = $c;
+            }
+        }
         $vals = [];
         foreach ($fd as $k => $v) {
             $vals[$k] = ($v === '' && in_array($k, $fechas, true)) ? null : $v;
         }
+        $archivoFoto = null;
         $conexion->begin_transaction();
         try {
             $cols = array_keys($vals);
@@ -324,13 +404,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $em->bind_param('issss', $id, $r['nombres'], $r['celular'], $r['fijo'], $r['parentesco']);
                 $em->execute();
             }
+            // Foto: guarda la nueva (o quita la actual) dentro de la misma transacción
+            if ($fotoNueva) {
+                $archivoFoto = bin2hex(random_bytes(12)) . '.' . $fotoNueva['ext'];
+                if (!move_uploaded_file($fotoNueva['tmp'], $dirFotos . $archivoFoto)) {
+                    $archivoFoto = null;
+                    throw new RuntimeException('No se pudo guardar la foto');
+                }
+                $u = $conexion->prepare("UPDATE personal SET foto=? WHERE id=?");
+                $u->bind_param('si', $archivoFoto, $id);
+                $u->execute();
+            } elseif ($quitarFoto) {
+                $u = $conexion->prepare("UPDATE personal SET foto='' WHERE id=?");
+                $u->bind_param('i', $id);
+                $u->execute();
+            }
             $conexion->commit();
+            if (($fotoNueva || $quitarFoto) && preg_match('/^[a-f0-9]{24}\.(jpg|png)$/', $fotoActual)) {
+                @unlink($dirFotos . $fotoActual);
+            }
             $_SESSION['flash'] = ['ok' => 'Ficha guardada correctamente.', 'err' => ''];
             header('Location: rrhh.php');
             exit;
         } catch (Throwable $ex) {
             // Ante cualquier fallo se revierte todo
             $conexion->rollback();
+            if ($archivoFoto) {
+                @unlink($dirFotos . $archivoFoto);
+            }
             $errores[] = 'No se pudo guardar la ficha; no se hicieron cambios.';
         }
     }
@@ -423,9 +524,14 @@ $nombreTitular = trim($fd['apellido_paterno'] . ' ' . $fd['apellido_materno'] . 
 <!-- Encabezado: título, imprimir y volver -->
 
 <div class="prov-cabecera">
-    <div>
-        <h1>Ficha de datos del personal</h1>
-        <p class="subtitulo"><?= $id ? e($nombreTitular) : 'Nueva ficha' ?><?= $editable ? '' : ' · Solo lectura' ?></p>
+    <div class="ficha-identidad">
+        <div>
+            <h1>Ficha de datos del personal</h1>
+            <p class="subtitulo"><?= $id ? e($nombreTitular) : 'Nueva ficha' ?><?= $editable ? '' : ' · Solo lectura' ?></p>
+        </div>
+        <?php if ($fotoActual !== ''): ?>
+            <img class="ficha-foto" src="ver_foto.php?id=<?= (int)$id ?>&amp;v=<?= e(substr($fotoActual, 0, 8)) ?>" alt="Foto de <?= e($nombreTitular) ?>">
+        <?php endif; ?>
     </div>
     <div class="no-imprimir">
         <button type="button" class="btn-sec" onclick="window.print()">Imprimir</button>
@@ -439,7 +545,7 @@ $nombreTitular = trim($fd['apellido_paterno'] . ' ' . $fd['apellido_materno'] . 
 <?php endif; ?>
 
 <!-- Formulario principal; el fieldset se deshabilita en modo solo lectura -->
-<form method="POST" class="ficha" autocomplete="off">
+<form method="POST" class="ficha" autocomplete="off" enctype="multipart/form-data">
     <input type="hidden" name="csrf" value="<?= e($_SESSION['csrf']) ?>">
     <input type="hidden" name="id" value="<?= (int)$id ?>">
     <fieldset <?= $editable ? '' : 'disabled' ?>>
@@ -447,6 +553,14 @@ $nombreTitular = trim($fd['apellido_paterno'] . ' ' . $fd['apellido_materno'] . 
         <!-- Sección: datos del empleado -->
         <div class="card">
             <h2>Información del empleado</h2>
+            <?php if ($editable): ?>
+            <div class="ficha-grid">
+                <div class="form-grupo"><label>Foto del empleado (JPG o PNG, máx. 5 MB)</label><input type="file" name="foto" accept="image/jpeg,image/png"></div>
+                <?php if ($fotoActual !== ''): ?>
+                <div class="form-grupo"><label>&nbsp;</label><label class="ficha-check"><input type="checkbox" name="quitar_foto" value="1"> Quitar la foto actual</label></div>
+                <?php endif; ?>
+            </div>
+            <?php endif; ?>
             <?= bloquePersona('', $fd, $SEXOS) ?>
             <div class="ficha-grid">
                 <?= campo('Puesto de trabajo al que será asignado', 'puesto_trabajo', $fd['puesto_trabajo'], 'maxlength="100"') ?>
@@ -502,7 +616,7 @@ $nombreTitular = trim($fd['apellido_paterno'] . ' ' . $fd['apellido_materno'] . 
         <div class="card">
             <h2>Sistema de pensiones</h2>
             <div class="ficha-grid">
-                <div class="form-grupo"><label>Tipo de AFP</label><select name="tipo_afp"><?= opciones($AFPS, $fd['tipo_afp']) ?></select></div>
+                <div class="form-grupo"><label>Tipo de régimen pensionario</label><select name="tipo_afp"><?= opciones($AFPS, $fd['tipo_afp']) ?></select></div>
                 <?= campo('CUSPP', 'cuspp', $fd['cuspp'], 'maxlength="12" pattern="[A-Za-z0-9]{12}" title="12 caracteres alfanuméricos" style="text-transform:uppercase"') ?>
             </div>
         </div>
@@ -515,6 +629,28 @@ $nombreTitular = trim($fd['apellido_paterno'] . ' ' . $fd['apellido_materno'] . 
                 <?= campo('Profesión (técnica, superior y/o universitaria)', 'profesion', $fd['profesion'], 'maxlength="255"') ?>
             </div>
         </div>
+
+        <!-- Secciones con los campos adicionales de la ficha -->
+        <?php foreach ($CAMPOS_EXTRA as $titulo => $campos): ?>
+        <div class="card">
+            <h2><?= e($titulo) ?></h2>
+            <div class="ficha-grid">
+                <?php foreach ($campos as $nombre => $def): ?>
+                    <?php if ($def[1] === 'date'): ?>
+                        <?= campo($def[0], $nombre, $fd[$nombre], '', 'date') ?>
+                    <?php elseif ($def[1] === 'sino' || $def[1] === 'select'): ?>
+                        <div class="form-grupo"><label><?= e($def[0]) ?></label><select name="<?= e($nombre) ?>"><?= opciones($def[1] === 'sino' ? OPCIONES_SINO : $def[2], $fd[$nombre]) ?></select></div>
+                    <?php elseif ($def[1] === 'textarea'): ?>
+                        <div class="form-grupo ficha-ancho"><label><?= e($def[0]) ?></label><textarea name="<?= e($nombre) ?>" maxlength="<?= (int)$def[2] ?>" rows="3"><?= e($fd[$nombre]) ?></textarea></div>
+                    <?php elseif ($def[1] === 'ruc'): ?>
+                        <?= campo($def[0], $nombre, $fd[$nombre], 'maxlength="11" inputmode="numeric" pattern="\d{11}" title="11 dígitos"') ?>
+                    <?php else: ?>
+                        <?= campo($def[0], $nombre, $fd[$nombre], 'maxlength="' . (int)$def[2] . '"') ?>
+                    <?php endif; ?>
+                <?php endforeach; ?>
+            </div>
+        </div>
+        <?php endforeach; ?>
 
         <!-- Sección: contactos de emergencia (filas dinámicas) -->
         <div class="card">

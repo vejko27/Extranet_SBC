@@ -291,3 +291,14 @@ dialog { max-height: 92vh; overflow-y: auto; }
 
 .form-prov-grid .form-prov-subtitulo { grid-column: 1 / -1; margin: 0 0 10px; padding: 6px 10px; border-left: 3px solid #006d88; background: #eef6f8; color: #00566c; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
 .form-prov-grid .form-prov-subtitulo:not(:first-child) { margin-top: 10px; padding-top: 6px; }
+
+.ficha-grid .ficha-ancho { grid-column: 1 / -1; }
+.ficha textarea { width: 100%; padding: 11px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; resize: vertical; }
+.ficha textarea:disabled { background: #f1f5f9; color: #0f172a; opacity: 1; }
+
+.ficha-grid { align-items: end; }
+.ficha input[type="date"], .ficha select, .ficha input[type="text"], .ficha input[type="email"] { height: 44px; }
+
+.ficha-identidad { display: flex; align-items: center; gap: 28px; padding: 8px 0 20px 12px; }
+.ficha-foto { width: 96px; height: 120px; margin: 4px 12px 4px 0; object-fit: cover; border: 1px solid #e2e8f0; border-radius: 10px; background: #fff; box-shadow: 0 2px 8px rgba(15, 23, 42, .12); }
+.ficha-check { display: flex; align-items: center; gap: 8px; height: 44px; font-weight: 600; }
