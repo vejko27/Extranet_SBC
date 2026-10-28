@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 // Módulo de proveedores homologados: listado por año, alta/edición/baja, cambio rápido de estados,
 // importación desde Excel (solo administrador) y búsqueda en vivo. Procesa los POST y muestra la página.
 // Variables de la página (usadas por el layout) y dependencias de sesión/BD
@@ -54,6 +54,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $banco = trim($_POST['banco'] ?? '');
             $numeroCuenta = trim($_POST['numero_cuenta'] ?? '');
             $cci = trim($_POST['cci'] ?? '');
+            $banco2 = trim($_POST['banco2'] ?? '');
+            $numeroCuenta2 = trim($_POST['numero_cuenta2'] ?? '');
+            $cci2 = trim($_POST['cci2'] ?? '');
+            $banco3 = trim($_POST['banco3'] ?? '');
+            $numeroCuenta3 = trim($_POST['numero_cuenta3'] ?? '');
+            $cci3 = trim($_POST['cci3'] ?? '');
             $bancoDetracciones = trim($_POST['banco_detracciones'] ?? '');
             $cuentaDetracciones = trim($_POST['cuenta_detracciones'] ?? '');
             $mes = $_POST['mes'] ?? '';
@@ -68,6 +74,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 || ($banco !== '' && !in_array($banco, $BANCOS, true))
                 || mb_strlen($numeroCuenta) > 30
                 || ($cci !== '' && !preg_match('/^\d{20}$/', $cci))
+                || ($banco2 !== '' && !in_array($banco2, $BANCOS, true)) || mb_strlen($numeroCuenta2) > 30 || ($cci2 !== '' && !preg_match('/^\d{20}$/', $cci2))
+                || ($banco3 !== '' && !in_array($banco3, $BANCOS, true)) || mb_strlen($numeroCuenta3) > 30 || ($cci3 !== '' && !preg_match('/^\d{20}$/', $cci3))
                 || ($bancoDetracciones !== '' && $bancoDetracciones !== $BANCO_DETRACCIONES)
                 || mb_strlen($cuentaDetracciones) > 30
                 || !in_array($mes, $MESES, true) || ($nuevo && $mes === '')
@@ -77,14 +85,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $err = 'Revisa los datos: razón social y tipo son obligatorios; el RUC debe tener 11 dígitos cuando se indica, el banco debe estar en la lista y el CCI debe tener 20 dígitos.';
             } elseif ($nuevo) {
                 // INSERT de un proveedor nuevo (consulta preparada)
-                $s = $conexion->prepare("INSERT INTO proveedores (razon_social,ruc,tipo,certificado,banco,numero_cuenta,cci,banco_detracciones,cuenta_detracciones,mes,acuerdo_seguridad,ddjj,filtros_aplicados,status,registrado_sistema) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
-                $s->bind_param('sssssssssssssss', $razon, $ruc, $tipo, $cert, $banco, $numeroCuenta, $cci, $bancoDetracciones, $cuentaDetracciones, $mes, $ac, $dj, $fi, $stt, $reg);
+                $s = $conexion->prepare("INSERT INTO proveedores (razon_social,ruc,tipo,certificado,banco,numero_cuenta,cci,banco2,numero_cuenta2,cci2,banco3,numero_cuenta3,cci3,banco_detracciones,cuenta_detracciones,mes,acuerdo_seguridad,ddjj,filtros_aplicados,status,registrado_sistema) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+                $s->bind_param('sssssssssssssssssssss', $razon, $ruc, $tipo, $cert, $banco, $numeroCuenta, $cci, $banco2, $numeroCuenta2, $cci2, $banco3, $numeroCuenta3, $cci3, $bancoDetracciones, $cuentaDetracciones, $mes, $ac, $dj, $fi, $stt, $reg);
                 $s->execute();
                 $ok = 'Proveedor agregado correctamente.';
             } else {
                 // UPDATE completo del proveedor existente
-                $s = $conexion->prepare("UPDATE proveedores SET razon_social=?,ruc=?,tipo=?,certificado=?,banco=?,numero_cuenta=?,cci=?,banco_detracciones=?,cuenta_detracciones=?,mes=?,acuerdo_seguridad=?,ddjj=?,filtros_aplicados=?,status=?,registrado_sistema=? WHERE id=?");
-                $s->bind_param('sssssssssssssssi', $razon, $ruc, $tipo, $cert, $banco, $numeroCuenta, $cci, $bancoDetracciones, $cuentaDetracciones, $mes, $ac, $dj, $fi, $stt, $reg, $id);
+                $s = $conexion->prepare("UPDATE proveedores SET razon_social=?,ruc=?,tipo=?,certificado=?,banco=?,numero_cuenta=?,cci=?,banco2=?,numero_cuenta2=?,cci2=?,banco3=?,numero_cuenta3=?,cci3=?,banco_detracciones=?,cuenta_detracciones=?,mes=?,acuerdo_seguridad=?,ddjj=?,filtros_aplicados=?,status=?,registrado_sistema=? WHERE id=?");
+                $s->bind_param('sssssssssssssssssssssi', $razon, $ruc, $tipo, $cert, $banco, $numeroCuenta, $cci, $banco2, $numeroCuenta2, $cci2, $banco3, $numeroCuenta3, $cci3, $bancoDetracciones, $cuentaDetracciones, $mes, $ac, $dj, $fi, $stt, $reg, $id);
                 $s->execute();
                 $ok = 'Proveedor actualizado correctamente.';
             }
@@ -353,9 +361,18 @@ require __DIR__ . '/layout_inicio.php';
             <section class="form-prov-seccion">
                 <h3>Información bancaria</h3>
                 <div class="form-prov-grid">
-                    <div class="form-grupo"><label for="f_banco">Banco</label><select name="banco" id="f_banco"><option value="">— Seleccionar —</option><?php opciones($BANCOS); ?></select></div>
+                    <h4 class="form-prov-subtitulo">Banco principal</h4>
+                    <div class="form-grupo form-prov-ancho"><label for="f_banco">Banco</label><select name="banco" id="f_banco"><option value="">— Seleccionar —</option><?php opciones($BANCOS); ?></select></div>
                     <div class="form-grupo"><label for="f_numero_cuenta">Número de cuenta</label><input type="text" name="numero_cuenta" id="f_numero_cuenta" maxlength="30"></div>
                     <div class="form-grupo"><label for="f_cci">CCI</label><input type="text" name="cci" id="f_cci" inputmode="numeric" pattern="\d{20}" maxlength="20" title="20 dígitos"></div>
+                    <h4 class="form-prov-subtitulo">Banco adicional 1</h4>
+                    <div class="form-grupo form-prov-ancho"><label for="f_banco2">Banco</label><select name="banco2" id="f_banco2"><option value="">— Seleccionar —</option><?php opciones($BANCOS); ?></select></div>
+                    <div class="form-grupo"><label for="f_numero_cuenta2">Número de cuenta</label><input type="text" name="numero_cuenta2" id="f_numero_cuenta2" maxlength="30"></div>
+                    <div class="form-grupo"><label for="f_cci2">CCI</label><input type="text" name="cci2" id="f_cci2" inputmode="numeric" pattern="\d{20}" maxlength="20" title="20 dígitos"></div>
+                    <h4 class="form-prov-subtitulo">Banco adicional 2</h4>
+                    <div class="form-grupo form-prov-ancho"><label for="f_banco3">Banco</label><select name="banco3" id="f_banco3"><option value="">— Seleccionar —</option><?php opciones($BANCOS); ?></select></div>
+                    <div class="form-grupo"><label for="f_numero_cuenta3">Número de cuenta</label><input type="text" name="numero_cuenta3" id="f_numero_cuenta3" maxlength="30"></div>
+                    <div class="form-grupo"><label for="f_cci3">CCI</label><input type="text" name="cci3" id="f_cci3" inputmode="numeric" pattern="\d{20}" maxlength="20" title="20 dígitos"></div>
                 </div>
             </section>
             <section class="form-prov-seccion">
@@ -386,14 +403,14 @@ require __DIR__ . '/layout_inicio.php';
 <script>
     // Control del modal: abrir() lo rellena con el proveedor (editar) o con valores por defecto (nuevo)
     const modal = document.getElementById("modal-prov");
-    const campos = ["razon_social","ruc","tipo","certificado","banco","numero_cuenta","cci","banco_detracciones","cuenta_detracciones","mes","acuerdo_seguridad","ddjj","filtros_aplicados","status","registrado_sistema"];
+    const campos = ["razon_social","ruc","tipo","certificado","banco","numero_cuenta","cci","banco2","numero_cuenta2","cci2","banco3","numero_cuenta3","cci3","banco_detracciones","cuenta_detracciones","mes","acuerdo_seguridad","ddjj","filtros_aplicados","status","registrado_sistema"];
     function abrir(p) {
         document.getElementById("m_titulo").textContent = p ? "Editar proveedor" : "Agregar proveedor";
         document.getElementById("f_id").value = p ? p.id : 0;
         document.getElementById("f_ruc").required = !p;
         campos.forEach((c) => {
             const el = document.getElementById("f_" + c);
-            el.value = p ? p[c] : (c === "tipo" ? "TRANSPORTE" : (el.tagName === "SELECT" ? (c === "status" ? "PENDIENTE" : (c === "mes" ? "ENE" : (c === "banco" || c === "banco_detracciones" ? "" : "NO"))) : ""));
+            el.value = p ? p[c] : (c === "tipo" ? "TRANSPORTE" : (el.tagName === "SELECT" ? (c === "status" ? "PENDIENTE" : (c === "mes" ? "ENE" : (c === "banco" || c === "banco2" || c === "banco3" || c === "banco_detracciones" ? "" : "NO"))) : ""));
         });
         modal.showModal();
     }
@@ -435,6 +452,12 @@ require __DIR__ . '/layout_inicio.php';
                 ["Entidad bancaria", "banco"],
                 ["Número de cuenta", "numero_cuenta"],
                 ["CCI", "cci"],
+                ["Banco 2", "banco2"],
+                ["Número de cuenta 2", "numero_cuenta2"],
+                ["CCI 2", "cci2"],
+                ["Banco 3", "banco3"],
+                ["Número de cuenta 3", "numero_cuenta3"],
+                ["CCI 3", "cci3"],
                 ["Banco de detracciones", "banco_detracciones"],
                 ["Cuenta de detracciones", "cuenta_detracciones"],
             ],

@@ -283,3 +283,11 @@ dialog { max-height: 92vh; overflow-y: auto; }
 }
 
 .tabla-prov tr[hidden] { display: none !important; }
+
+.rrhh-status-box { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+.rrhh-status-box small { color: #64748b; font-size: 12px; }
+.rrhh-toggle-form { display: inline-flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.input-fecha-baja { min-width: 130px; width: auto; }
+
+.form-prov-grid .form-prov-subtitulo { grid-column: 1 / -1; margin: 0 0 10px; padding: 6px 10px; border-left: 3px solid #006d88; background: #eef6f8; color: #00566c; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+.form-prov-grid .form-prov-subtitulo:not(:first-child) { margin-top: 10px; padding-top: 6px; }
