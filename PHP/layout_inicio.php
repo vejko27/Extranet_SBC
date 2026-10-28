@@ -24,41 +24,52 @@ $manualActivo = $paginaActiva === 'manuales' ? (string)($_GET['m'] ?? array_key_
     <link rel="icon" type="image/x-icon" href="../icono_de_navegación/Icono_de_pestana_de_navegacion.ico">
     <link rel="shortcut icon" href="../icono_de_navegación/Icono_de_pestana_de_navegacion.ico">
     <link rel="stylesheet" href="../estilos/style_panel.css?v=<?= filemtime(dirname(__DIR__) . '/estilos/style_panel.css') ?>">
+    <script>
+        try {
+            if (localStorage.getItem('sidebarColapsado') === '1') {
+                document.documentElement.classList.add('sidebar-colapsado');
+            }
+        } catch (e) {}
+    </script>
 </head>
 <body>
 <div class="layout">
     <aside class="sidebar">
-        <div class="marca">Extranet <span>SBC</span></div>
+        <div class="sidebar-cabecera">
+            <div class="marca">Extranet <span>SBC</span></div>
+            <button type="button" class="sidebar-colapsar" id="toggle-sidebar" aria-label="Contraer menú" aria-expanded="true" title="Contraer menú">‹</button>
+        </div>
         <!-- Menú lateral: cada enlace aparece solo si el usuario tiene el permiso -->
         <nav>
-            <a href="dashboard.php" class="<?= $paginaActiva === 'dashboard' ? 'activo' : '' ?>">Inicio</a>
+            <a href="dashboard.php" data-short="I" title="Inicio" class="<?= $paginaActiva === 'dashboard' ? 'activo' : '' ?>">Inicio</a>
             <?php if ($veUsuarios): ?>
-                <a href="usuarios.php" class="<?= $paginaActiva === 'usuarios' ? 'activo' : '' ?>">Usuarios y roles</a>
+                <a href="usuarios.php" data-short="U" title="Usuarios y roles" class="<?= $paginaActiva === 'usuarios' ? 'activo' : '' ?>">Usuarios y roles</a>
             <?php endif; ?>
             <?php if ($creaUsuarios): ?>
-                <a href="registrar.php" class="<?= $paginaActiva === 'registrar' ? 'activo' : '' ?>">Registrar usuario</a>
+                <a href="registrar.php" data-short="R" title="Registrar usuario" class="<?= $paginaActiva === 'registrar' ? 'activo' : '' ?>">Registrar usuario</a>
             <?php endif; ?>
             <?php if ($esAdmin): ?>
-                <a href="permisos.php" class="<?= $paginaActiva === 'permisos' ? 'activo' : '' ?>">Permisos</a>
+                <a href="permisos.php" data-short="P" title="Permisos" class="<?= $paginaActiva === 'permisos' ? 'activo' : '' ?>">Permisos</a>
             <?php endif; ?>
             <?php if ($adminManuales): ?>
-                <a href="admin_manuales.php" class="<?= $paginaActiva === 'admin_manuales' ? 'activo' : '' ?>">Administrar manuales</a>
+                <a href="admin_manuales.php" data-short="A" title="Administrar manuales" class="<?= $paginaActiva === 'admin_manuales' ? 'activo' : '' ?>">Administrar manuales</a>
             <?php endif; ?>
             <?php if ($veProveedores): ?>
-                <a href="proveedores.php" class="<?= $paginaActiva === 'proveedores' ? 'activo' : '' ?>">Proveedores</a>
+                <a href="proveedores.php" data-short="P" title="Proveedores" class="<?= $paginaActiva === 'proveedores' ? 'activo' : '' ?>">Proveedores</a>
             <?php endif; ?>
             <?php if ($veRRHH): ?>
-                <a href="rrhh.php" class="<?= $paginaActiva === 'rrhh' ? 'activo' : '' ?>">Recursos Humanos</a>
+                <a href="rrhh.php" data-short="RH" title="Recursos Humanos" class="<?= $paginaActiva === 'rrhh' ? 'activo' : '' ?>">Recursos Humanos</a>
             <?php endif; ?>
             <?php if ($veManuales): ?>
                 <!-- Submenú desplegable con un enlace por cada manual -->
-                <button type="button" class="grupo-titulo grupo-toggle" id="toggle-manuales" aria-expanded="true" aria-controls="submenu-manuales">
-                    <span>Manuales</span><span class="flecha" aria-hidden="true">▾</span>
+                <button type="button" class="grupo-titulo grupo-toggle" id="toggle-manuales" data-short="M" title="Manuales" aria-expanded="true" aria-controls="submenu-manuales">
+                    <span class="grupo-nombre">Manuales</span><span class="flecha" aria-hidden="true">▾</span>
                 </button>
                 <div class="submenu" id="submenu-manuales">
                 <?php foreach ($manuales as $clave => [$t, $d]): ?>
                     <a href="manuales.php?m=<?= urlencode($clave) ?>"
                        class="sub<?= $manualActivo === (string)$clave ? ' activo' : '' ?>"
+                       title="<?= htmlspecialchars($t) ?>"
                        data-title="<?= htmlspecialchars($t) ?>"
                        data-description="<?= htmlspecialchars($d) ?>"
                        data-pdf="ver_manual.php?f=<?= urlencode($clave) ?>"><?= htmlspecialchars($t) ?></a>
@@ -82,7 +93,7 @@ $manualActivo = $paginaActiva === 'manuales' ? (string)($_GET['m'] ?? array_key_
             <?php endif; ?>
         </nav>
         <!-- Enlace para cerrar sesión -->
-        <a href="logout.php" class="salir">Cerrar sesión</a>
+        <a href="logout.php" class="salir" data-short="↪" title="Cerrar sesión">Cerrar sesión</a>
     </aside>
     <!-- Aquí empieza el contenido de cada página; se cierra en layout_fin.php -->
     <main class="contenido">

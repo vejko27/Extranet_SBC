@@ -102,8 +102,13 @@ require __DIR__ . '/layout_inicio.php';
 $lista = $conexion->query("SELECT id, titulo, descripcion, archivo FROM manuales ORDER BY id")->fetch_all(MYSQLI_ASSOC);
 ?>
 
-<h1>Administrar manuales</h1>
-<p class="subtitulo">Sube, edita o elimina los manuales en PDF según tus permisos.</p>
+<div class="cabecera-marca">
+    <img class="logo-marca" src="../logo/SBC_TRANSPORT.jpg" alt="SMART Transporte de Carga Pesada">
+    <div>
+        <h1>Administrar manuales</h1>
+        <p class="subtitulo">Sube, edita o elimina los manuales en PDF según tus permisos.</p>
+    </div>
+</div>
 
 <?php /* Alertas de resultado */ ?>
 <?php if ($ok): ?><div class="alerta ok"><?= e($ok) ?></div><?php endif; ?>

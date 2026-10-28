@@ -18,8 +18,13 @@ if (!$esAdmin) {
 $msg = $_GET['msg'] ?? '';
 ?>
 
-<h1>Registrar usuario</h1>
-<p class="subtitulo">Crea una cuenta y asígnale un rol.</p>
+<div class="cabecera-marca">
+    <img class="logo-marca" src="../logo/SBC_TRANSPORT.jpg" alt="SMART Transporte de Carga Pesada">
+    <div>
+        <h1>Registrar usuario</h1>
+        <p class="subtitulo">Crea una cuenta y asígnale un rol.</p>
+    </div>
+</div>
 
 <?php /* Alertas de resultado */ ?>
 <?php if ($msg === 'ok'): ?><div class="alerta ok">Usuario guardado correctamente.</div><?php endif; ?>

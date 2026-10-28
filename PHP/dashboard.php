@@ -17,8 +17,13 @@ if ($veRRHH)        $tarjetas[] = ['rrhh.php', 'Recursos Humanos', 'Fichas de da
 ?>
 
 <?php /* Saludo al usuario en sesión */ ?>
-<h1>Bienvenido, <?= htmlspecialchars($_SESSION['nombre']) ?></h1>
-<p class="subtitulo">Selecciona una opción para comenzar.</p>
+<div class="cabecera-marca">
+    <img class="logo-marca" src="../logo/SBC_TRANSPORT.jpg" alt="SMART Transporte de Carga Pesada">
+    <div>
+        <h1>Bienvenido, <?= htmlspecialchars($_SESSION['nombre']) ?></h1>
+        <p class="subtitulo">Selecciona una opción para comenzar.</p>
+    </div>
+</div>
 
 <?php /* Cuadrícula de tarjetas o mensaje si no hay módulos asignados */ ?>
 <?php if ($tarjetas): ?>

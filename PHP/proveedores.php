@@ -27,6 +27,11 @@ $MESES = ['', 'ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SET','OCT','NOV',
 $TRI = ['SI','NO','NO APLICA'];
 $STATUS = ['PENDIENTE','HOMOLOGADO'];
 $SINO = ['', 'SI','NO'];
+$BANCOS = [
+    'Banco de Crédito del Perú', 'BBVA', 'Interbank', 'Scotiabank',
+    'Pichincha', 'Banbif', 'Banco GNB', 'Mibanco',
+];
+$BANCO_DETRACCIONES = 'Banco de la Nación';
 
 // Procesamiento POST: valida CSRF y ejecuta la acción; luego redirige (patrón PRG con mensaje flash)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -46,6 +51,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $ruc = trim($_POST['ruc'] ?? '');
             $tipo = mb_strtoupper(trim($_POST['tipo'] ?? ''));
             $cert = mb_strtoupper(trim($_POST['certificado'] ?? ''));
+            $banco = trim($_POST['banco'] ?? '');
+            $numeroCuenta = trim($_POST['numero_cuenta'] ?? '');
+            $cci = trim($_POST['cci'] ?? '');
+            $bancoDetracciones = trim($_POST['banco_detracciones'] ?? '');
+            $cuentaDetracciones = trim($_POST['cuenta_detracciones'] ?? '');
             $mes = $_POST['mes'] ?? '';
             $ac = $_POST['acuerdo_seguridad'] ?? '';
             $dj = $_POST['ddjj'] ?? '';
@@ -55,21 +65,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Las altas exigen los datos identificadores; en ediciones se permiten vacíos por completar.
             if ($razon === '' || ($ruc === '' ? $nuevo : !preg_match('/^\d{11}$/', $ruc)) || $tipo === '' || mb_strlen($razon) > 200
                 || mb_strlen($tipo) > 40 || mb_strlen($cert) > 60
+                || ($banco !== '' && !in_array($banco, $BANCOS, true))
+                || mb_strlen($numeroCuenta) > 30
+                || ($cci !== '' && !preg_match('/^\d{20}$/', $cci))
+                || ($bancoDetracciones !== '' && $bancoDetracciones !== $BANCO_DETRACCIONES)
+                || mb_strlen($cuentaDetracciones) > 30
                 || !in_array($mes, $MESES, true) || ($nuevo && $mes === '')
                 || !in_array($ac, $TRI, true) || !in_array($dj, $TRI, true)
                 || !in_array($fi, $TRI, true) || !in_array($stt, $STATUS, true)
                 || !in_array($reg, $SINO, true) || ($nuevo && $reg === '')) {
-                $err = 'Revisa los datos: razón social y tipo son obligatorios; el RUC debe tener 11 dígitos cuando se indica.';
+                $err = 'Revisa los datos: razón social y tipo son obligatorios; el RUC debe tener 11 dígitos cuando se indica, el banco debe estar en la lista y el CCI debe tener 20 dígitos.';
             } elseif ($nuevo) {
                 // INSERT de un proveedor nuevo (consulta preparada)
-                $s = $conexion->prepare("INSERT INTO proveedores (razon_social,ruc,tipo,certificado,mes,acuerdo_seguridad,ddjj,filtros_aplicados,status,registrado_sistema) VALUES (?,?,?,?,?,?,?,?,?,?)");
-                $s->bind_param('ssssssssss', $razon, $ruc, $tipo, $cert, $mes, $ac, $dj, $fi, $stt, $reg);
+                $s = $conexion->prepare("INSERT INTO proveedores (razon_social,ruc,tipo,certificado,banco,numero_cuenta,cci,banco_detracciones,cuenta_detracciones,mes,acuerdo_seguridad,ddjj,filtros_aplicados,status,registrado_sistema) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+                $s->bind_param('sssssssssssssss', $razon, $ruc, $tipo, $cert, $banco, $numeroCuenta, $cci, $bancoDetracciones, $cuentaDetracciones, $mes, $ac, $dj, $fi, $stt, $reg);
                 $s->execute();
                 $ok = 'Proveedor agregado correctamente.';
             } else {
                 // UPDATE completo del proveedor existente
-                $s = $conexion->prepare("UPDATE proveedores SET razon_social=?,ruc=?,tipo=?,certificado=?,mes=?,acuerdo_seguridad=?,ddjj=?,filtros_aplicados=?,status=?,registrado_sistema=? WHERE id=?");
-                $s->bind_param('ssssssssssi', $razon, $ruc, $tipo, $cert, $mes, $ac, $dj, $fi, $stt, $reg, $id);
+                $s = $conexion->prepare("UPDATE proveedores SET razon_social=?,ruc=?,tipo=?,certificado=?,banco=?,numero_cuenta=?,cci=?,banco_detracciones=?,cuenta_detracciones=?,mes=?,acuerdo_seguridad=?,ddjj=?,filtros_aplicados=?,status=?,registrado_sistema=? WHERE id=?");
+                $s->bind_param('sssssssssssssssi', $razon, $ruc, $tipo, $cert, $banco, $numeroCuenta, $cci, $bancoDetracciones, $cuentaDetracciones, $mes, $ac, $dj, $fi, $stt, $reg, $id);
                 $s->execute();
                 $ok = 'Proveedor actualizado correctamente.';
             }
@@ -223,9 +238,12 @@ require __DIR__ . '/layout_inicio.php';
 
 <?php /* Título, fecha y porcentaje de homologados */ ?>
 <div class="prov-cabecera">
-    <div>
-        <h1>Listado de proveedores homologados <?= (int)$anio ?></h1>
-        <p class="subtitulo">Control interno · Fecha: <?= e($fecha) ?> · Versión: 001</p>
+    <div class="prov-identidad">
+        <img class="prov-logo" src="../logo/SBC_TRANSPORT.jpg" alt="SMART Transporte de Carga Pesada">
+        <div>
+            <h1>Listado de proveedores homologados <?= (int)$anio ?></h1>
+            <p class="subtitulo">Control interno · Fecha: <?= e($fecha) ?> · Versión: 001</p>
+        </div>
     </div>
     <div class="prov-porcentaje">
         <span>% de proveedores homologados:</span>
@@ -259,26 +277,13 @@ require __DIR__ . '/layout_inicio.php';
     <?php endif; ?>
 </div>
 
-<?php /* Formulario de importación de Excel (solo administrador) */ ?>
-<?php if ($esAdmin): ?>
-<form method="POST" enctype="multipart/form-data" class="card prov-import"
-      onsubmit="return confirm('Esto reemplazará TODOS los proveedores de <?= (int)$anio ?> con el contenido del Excel. ¿Continuar?');">
-    <input type="hidden" name="csrf" value="<?= e($_SESSION['csrf']) ?>">
-    <input type="hidden" name="accion" value="importar">
-    <input type="hidden" name="anio" value="<?= (int)$anio ?>">
-    <label for="excel">Importar Excel (reemplaza el listado de <?= (int)$anio ?>):</label>
-    <input type="file" name="excel" id="excel" accept=".xlsx" required>
-    <button type="submit">Subir y reemplazar</button>
-</form>
-<?php endif; ?>
-
 <?php /* Tabla de proveedores: encabezados, mensaje de vacío y una fila por proveedor */ ?>
 <div class="card tabla-scroll">
     <table class="tabla-prov">
         <tr>
             <th>N°</th><th>Razón social</th><th>RUC</th><th>Tipo</th><th>Certificado</th><th>Mes</th>
             <th>Acuerdo de seguridad</th><th>DDJJ</th><th>Filtros aplicados</th><th>Status</th><th>Registrado en el sistema</th>
-            <?php if ($puedeModificar): ?><th>Acciones</th><?php endif; ?>
+            <th>Acciones</th>
         </tr>
         <?php if (!$visibles): ?>
             <tr><td colspan="12"><?= $buscar             !== '' ? 'Sin resultados para «' . e($buscar) . '».' : 'No hay proveedores registrados en ' . (int)$anio . '.' ?></td></tr>
@@ -296,8 +301,13 @@ require __DIR__ . '/layout_inicio.php';
             <?php celdaSelect('Filtros aplicados', 'filtros_aplicados', $TRI, $p, $puedeEditar); ?>
             <?php celdaSelect('Status', 'status', $STATUS, $p, $puedeEditar); ?>
             <?php celdaSelect('Registrado en el sistema', 'registrado_sistema', $SINO, $p, $puedeEditar); ?>
-            <?php if ($puedeModificar): ?>
             <td data-label="Acciones" class="celda-acciones">
+                <button type="button" class="btn-sec btn-ver-proveedor" data-p="<?= e(json_encode($p, JSON_UNESCAPED_UNICODE)) ?>" aria-label="Ver proveedor <?= e($p['razon_social']) ?>" title="Ver proveedor">
+                    <svg aria-hidden="true" focusable="false" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
+                    </svg>
+                </button>
                 <?php if ($puedeEditar): ?>
                 <button type="button" class="btn-sec btn-editar" data-p="<?= e(json_encode($p, JSON_UNESCAPED_UNICODE)) ?>">Editar</button>
                 <?php endif; ?>
@@ -310,7 +320,6 @@ require __DIR__ . '/layout_inicio.php';
                 </form>
                 <?php endif; ?>
             </td>
-            <?php endif; ?>
         </tr>
         <?php endforeach; ?>
     </table>
@@ -319,22 +328,55 @@ require __DIR__ . '/layout_inicio.php';
 <?php /* Modal de alta/edición (solo con permiso de crear o editar) */ ?>
 <?php if ($puedeCrear || $puedeEditar): ?>
 <dialog id="modal-prov">
-    <h2 id="m_titulo">Proveedor</h2>
+    <header class="vista-prov-cabecera">
+        <div>
+            <p class="vista-prov-etiqueta">Gestión de proveedores</p>
+            <h2 id="m_titulo">Proveedor</h2>
+        </div>
+        <span class="vista-prov-estado">Formulario</span>
+    </header>
     <form method="POST">
         <input type="hidden" name="csrf" value="<?= e($_SESSION['csrf']) ?>">
         <input type="hidden" name="accion" value="guardar">
         <input type="hidden" name="id" id="f_id" value="0">
-        <div class="form-grupo"><label>Razón social</label><input type="text" name="razon_social" id="f_razon_social" maxlength="200" required></div>
-        <div class="form-grupo"><label>RUC</label><input type="text" name="ruc" id="f_ruc" inputmode="numeric" pattern="\d{11}" maxlength="11" title="11 dígitos"></div>
-        <div class="form-grupo"><label>Tipo</label><input type="text" name="tipo" id="f_tipo" list="tipos" maxlength="40" required>
-            <datalist id="tipos"><option value="TRANSPORTE"><option value="RESGUARDO"></datalist></div>
-        <div class="form-grupo"><label>Certificado</label><input type="text" name="certificado" id="f_certificado" maxlength="60"></div>
-        <div class="form-grupo"><label>Mes</label><select name="mes" id="f_mes"><?php opciones($MESES); ?></select></div>
-        <div class="form-grupo"><label>Acuerdo de seguridad</label><select name="acuerdo_seguridad" id="f_acuerdo_seguridad"><?php opciones($TRI); ?></select></div>
-        <div class="form-grupo"><label>DDJJ</label><select name="ddjj" id="f_ddjj"><?php opciones($TRI); ?></select></div>
-        <div class="form-grupo"><label>Filtros aplicados</label><select name="filtros_aplicados" id="f_filtros_aplicados"><?php opciones($TRI); ?></select></div>
-        <div class="form-grupo"><label>Status</label><select name="status" id="f_status"><?php opciones($STATUS); ?></select></div>
-        <div class="form-grupo"><label>Registrado en el sistema</label><select name="registrado_sistema" id="f_registrado_sistema"><?php opciones($SINO); ?></select></div>
+        <div class="form-prov-secciones">
+            <section class="form-prov-seccion">
+                <h3>Identificación del proveedor</h3>
+                <div class="form-prov-grid">
+                    <div class="form-grupo form-prov-ancho"><label for="f_razon_social">Razón social</label><input type="text" name="razon_social" id="f_razon_social" maxlength="200" required></div>
+                    <div class="form-grupo"><label for="f_ruc">RUC</label><input type="text" name="ruc" id="f_ruc" inputmode="numeric" pattern="\d{11}" maxlength="11" title="11 dígitos"></div>
+                    <div class="form-grupo"><label for="f_tipo">Tipo</label><input type="text" name="tipo" id="f_tipo" list="tipos" maxlength="40" required>
+                        <datalist id="tipos"><option value="TRANSPORTE"><option value="RESGUARDO"></datalist></div>
+                    <div class="form-grupo"><label for="f_certificado">Certificado</label><input type="text" name="certificado" id="f_certificado" maxlength="60"></div>
+                </div>
+            </section>
+            <section class="form-prov-seccion">
+                <h3>Información bancaria</h3>
+                <div class="form-prov-grid">
+                    <div class="form-grupo"><label for="f_banco">Banco</label><select name="banco" id="f_banco"><option value="">— Seleccionar —</option><?php opciones($BANCOS); ?></select></div>
+                    <div class="form-grupo"><label for="f_numero_cuenta">Número de cuenta</label><input type="text" name="numero_cuenta" id="f_numero_cuenta" maxlength="30"></div>
+                    <div class="form-grupo"><label for="f_cci">CCI</label><input type="text" name="cci" id="f_cci" inputmode="numeric" pattern="\d{20}" maxlength="20" title="20 dígitos"></div>
+                </div>
+            </section>
+            <section class="form-prov-seccion">
+                <h3>Cuenta de detracciones</h3>
+                <div class="form-prov-grid">
+                    <div class="form-grupo"><label for="f_banco_detracciones">Banco de la Nación</label><select name="banco_detracciones" id="f_banco_detracciones"><option value="">— Seleccionar —</option><option value="<?= e($BANCO_DETRACCIONES) ?>"><?= e($BANCO_DETRACCIONES) ?></option></select></div>
+                    <div class="form-grupo"><label for="f_cuenta_detracciones">Número de cuenta de detracciones</label><input type="text" name="cuenta_detracciones" id="f_cuenta_detracciones" maxlength="30"></div>
+                </div>
+            </section>
+            <section class="form-prov-seccion">
+                <h3>Homologación</h3>
+                <div class="form-prov-grid">
+                    <div class="form-grupo"><label for="f_mes">Mes</label><select name="mes" id="f_mes"><?php opciones($MESES); ?></select></div>
+                    <div class="form-grupo"><label for="f_acuerdo_seguridad">Acuerdo de seguridad</label><select name="acuerdo_seguridad" id="f_acuerdo_seguridad"><?php opciones($TRI); ?></select></div>
+                    <div class="form-grupo"><label for="f_ddjj">DDJJ</label><select name="ddjj" id="f_ddjj"><?php opciones($TRI); ?></select></div>
+                    <div class="form-grupo"><label for="f_filtros_aplicados">Filtros aplicados</label><select name="filtros_aplicados" id="f_filtros_aplicados"><?php opciones($TRI); ?></select></div>
+                    <div class="form-grupo"><label for="f_status">Status</label><select name="status" id="f_status"><?php opciones($STATUS); ?></select></div>
+                    <div class="form-grupo"><label for="f_registrado_sistema">Registrado en el sistema</label><select name="registrado_sistema" id="f_registrado_sistema"><?php opciones($SINO); ?></select></div>
+                </div>
+            </section>
+        </div>
         <div class="modal-acciones">
             <button type="button" class="btn-sec" id="f_cancelar">Cancelar</button>
             <button type="submit">Guardar</button>
@@ -344,14 +386,14 @@ require __DIR__ . '/layout_inicio.php';
 <script>
     // Control del modal: abrir() lo rellena con el proveedor (editar) o con valores por defecto (nuevo)
     const modal = document.getElementById("modal-prov");
-    const campos = ["razon_social","ruc","tipo","certificado","mes","acuerdo_seguridad","ddjj","filtros_aplicados","status","registrado_sistema"];
+    const campos = ["razon_social","ruc","tipo","certificado","banco","numero_cuenta","cci","banco_detracciones","cuenta_detracciones","mes","acuerdo_seguridad","ddjj","filtros_aplicados","status","registrado_sistema"];
     function abrir(p) {
         document.getElementById("m_titulo").textContent = p ? "Editar proveedor" : "Agregar proveedor";
         document.getElementById("f_id").value = p ? p.id : 0;
         document.getElementById("f_ruc").required = !p;
         campos.forEach((c) => {
             const el = document.getElementById("f_" + c);
-            el.value = p ? p[c] : (c === "tipo" ? "TRANSPORTE" : (el.tagName === "SELECT" ? (c === "status" ? "PENDIENTE" : (c === "mes" ? "ENE" : "NO")) : ""));
+            el.value = p ? p[c] : (c === "tipo" ? "TRANSPORTE" : (el.tagName === "SELECT" ? (c === "status" ? "PENDIENTE" : (c === "mes" ? "ENE" : (c === "banco" || c === "banco_detracciones" ? "" : "NO"))) : ""));
         });
         modal.showModal();
     }
@@ -362,6 +404,99 @@ require __DIR__ . '/layout_inicio.php';
     document.getElementById("f_cancelar").addEventListener("click", () => modal.close());
 </script>
 <?php endif; ?>
+<dialog id="modal-ver-prov">
+    <header class="vista-prov-cabecera">
+        <div>
+            <p class="vista-prov-etiqueta">Ficha del proveedor</p>
+            <h2 id="titulo-ver-prov">Datos del proveedor</h2>
+        </div>
+        <span id="estado-ver-prov" class="vista-prov-estado"></span>
+    </header>
+    <div id="datos-ver-prov" class="vista-prov-secciones"></div>
+    <div class="modal-acciones">
+        <button type="button" class="btn-sec" id="cerrar-ver-prov">Cerrar</button>
+    </div>
+</dialog>
+<script>
+    const modalVerProveedor = document.getElementById("modal-ver-prov");
+    const camposVistaProveedor = [
+        {
+            seccion: "Identificación",
+            campos: [
+                ["Razón social", "razon_social"],
+                ["RUC", "ruc"],
+                ["Tipo de proveedor", "tipo"],
+                ["Certificado", "certificado"],
+            ],
+        },
+        {
+            seccion: "Información bancaria",
+            campos: [
+                ["Entidad bancaria", "banco"],
+                ["Número de cuenta", "numero_cuenta"],
+                ["CCI", "cci"],
+                ["Banco de detracciones", "banco_detracciones"],
+                ["Cuenta de detracciones", "cuenta_detracciones"],
+            ],
+        },
+        {
+            seccion: "Homologación",
+            campos: [
+                ["Mes de registro", "mes"],
+                ["Acuerdo de seguridad", "acuerdo_seguridad"],
+                ["DDJJ", "ddjj"],
+                ["Filtros aplicados", "filtros_aplicados"],
+                ["Estado", "status"],
+                ["Registrado en el sistema", "registrado_sistema"],
+            ],
+        },
+        {
+            seccion: "Control del registro",
+            campos: [
+                ["N° de registro", "id"],
+                ["Fecha de registro", "creado"],
+                ["Última actualización", "actualizado"],
+            ],
+        },
+    ];
+    document.querySelectorAll(".btn-ver-proveedor").forEach((boton) => {
+        boton.addEventListener("click", () => {
+            const proveedor = JSON.parse(boton.dataset.p);
+            const lista = document.getElementById("datos-ver-prov");
+            lista.replaceChildren();
+            document.getElementById("titulo-ver-prov").textContent = proveedor.razon_social || "Datos del proveedor";
+            const estado = document.getElementById("estado-ver-prov");
+            estado.textContent = proveedor.status || "Sin estado";
+            estado.className = "vista-prov-estado" + (proveedor.status === "HOMOLOGADO" ? " homologado" : " pendiente");
+            camposVistaProveedor.forEach(({ seccion, campos }) => {
+                const bloque = document.createElement("section");
+                bloque.className = "vista-prov-seccion";
+                const encabezado = document.createElement("h3");
+                encabezado.textContent = seccion;
+                const datos = document.createElement("dl");
+                datos.className = "datos-ver-prov";
+                campos.forEach(([etiqueta, campo]) => {
+                    const titulo = document.createElement("dt");
+                    titulo.textContent = etiqueta;
+                    const valor = document.createElement("dd");
+                    let texto = proveedor[campo] || "Sin registrar";
+                    if (["creado", "actualizado"].includes(campo) && proveedor[campo]) {
+                        const fecha = proveedor[campo].match(/^(\d{4})-(\d{2})-(\d{2})(?:\s+(\d{2}):(\d{2})(?::\d{2})?)?$/);
+                        if (fecha) {
+                            texto = `${fecha[3]}/${fecha[2]}/${fecha[1]}${fecha[4] ? ` ${fecha[4]}:${fecha[5]}` : ""}`;
+                        }
+                    }
+                    valor.textContent = texto;
+                    datos.append(titulo, valor);
+                });
+                bloque.append(encabezado, datos);
+                lista.append(bloque);
+            });
+            modalVerProveedor.showModal();
+        });
+    });
+    document.getElementById("cerrar-ver-prov").addEventListener("click", () => modalVerProveedor.close());
+</script>
 <script>
     // Filtro en vivo mientras se escribe (razón social, RUC o tipo)
     (() => {

@@ -13,8 +13,13 @@ if (!isset($manuales[$clave])) {
 }
 
 if ($clave === null): ?>
-<h1>Manuales</h1>
-<p class="subtitulo">Aún no hay manuales disponibles.</p>
+<div class="cabecera-marca">
+    <img class="logo-marca" src="../logo/SBC_TRANSPORT.jpg" alt="SMART Transporte de Carga Pesada">
+    <div>
+        <h1>Manuales</h1>
+        <p class="subtitulo">Aún no hay manuales disponibles.</p>
+    </div>
+</div>
 <?php /* Sin manuales: muestra aviso y termina la página */ ?>
 <?php
     require __DIR__ . '/layout_fin.php';
@@ -25,8 +30,13 @@ endif;
 [$titulo, $descripcion] = $manuales[$clave];
 ?>
 
-<h1 id="manual-title"><?= htmlspecialchars($titulo) ?></h1>
-<p id="manual-description" class="subtitulo"><?= htmlspecialchars($descripcion) ?></p>
+<div class="cabecera-marca">
+    <img class="logo-marca" src="../logo/SBC_TRANSPORT.jpg" alt="SMART Transporte de Carga Pesada">
+    <div>
+        <h1 id="manual-title"><?= htmlspecialchars($titulo) ?></h1>
+        <p id="manual-description" class="subtitulo"><?= htmlspecialchars($descripcion) ?></p>
+    </div>
+</div>
 
 <!-- Contenedor donde pdf-reader.js dibuja el PDF servido por ver_manual.php -->
 <div class="pdf-reader" data-pdf="ver_manual.php?f=<?= urlencode($clave) ?>" aria-label="Documento PDF">

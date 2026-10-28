@@ -141,8 +141,13 @@ $tituloPagina = 'Gestión de usuarios';
 require __DIR__ . '/layout_inicio.php';
 ?>
 
-<h1>Gestión de usuarios</h1>
-<p class="subtitulo">Crea usuarios y asigna sus roles.</p>
+<div class="cabecera-marca">
+    <img class="logo-marca" src="../logo/SBC_TRANSPORT.jpg" alt="SMART Transporte de Carga Pesada">
+    <div>
+        <h1>Gestión de usuarios</h1>
+        <p class="subtitulo">Crea usuarios y asigna sus roles.</p>
+    </div>
+</div>
 
 <?php /* Alertas de resultado */ ?>
 <?php if ($mensaje): ?><div class="alerta ok"><?= e($mensaje) ?></div><?php endif; ?>

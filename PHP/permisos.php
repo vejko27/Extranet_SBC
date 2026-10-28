@@ -80,8 +80,13 @@ foreach ($st->get_result() as $p) {
 require __DIR__ . '/layout_inicio.php';
 ?>
 
-<h1>Gestión de permisos</h1>
-<p class="subtitulo">Define qué puede hacer cada rol en cada módulo.</p>
+<div class="cabecera-marca">
+    <img class="logo-marca" src="../logo/SBC_TRANSPORT.jpg" alt="SMART Transporte de Carga Pesada">
+    <div>
+        <h1>Gestión de permisos</h1>
+        <p class="subtitulo">Define qué puede hacer cada rol en cada módulo.</p>
+    </div>
+</div>
 
 <?php /* Alertas de resultado */ ?>
 <?php if ($flash['ok']): ?><div class="alerta ok"><?= e($flash['ok']) ?></div><?php endif; ?>

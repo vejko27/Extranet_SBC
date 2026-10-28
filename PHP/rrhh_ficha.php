@@ -24,7 +24,8 @@ function e($v) { return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
 
 // id = 0 es ficha nueva; $editable indica si el usuario puede modificar el formulario
 $id = (int)($_GET['id'] ?? $_POST['id'] ?? 0);
-$editable = $id ? $puedeEditar : $puedeCrear;
+$soloLectura = $id > 0 && ($_GET['modo'] ?? '') === 'ver';
+$editable = $id ? ($puedeEditar && !$soloLectura) : $puedeCrear;
 if (!$id && !$puedeCrear) {
     http_response_code(403);
     exit('Acceso denegado');

@@ -77,8 +77,13 @@ require __DIR__ . '/layout_inicio.php';
 ?>
 <!-- Título de la página -->
 
-<h1>Recursos Humanos</h1>
-<p class="subtitulo">Fichas de datos del personal.</p>
+<div class="cabecera-marca">
+    <img class="logo-marca" src="../logo/SBC_TRANSPORT.jpg" alt="SMART Transporte de Carga Pesada">
+    <div>
+        <h1>Recursos Humanos</h1>
+        <p class="subtitulo">Fichas de datos del personal.</p>
+    </div>
+</div>
 
 <!-- Alertas de resultado (éxito / error) -->
 <?php if ($ok): ?><div class="alerta ok"><?= e($ok) ?></div><?php endif; ?>
@@ -116,9 +121,17 @@ require __DIR__ . '/layout_inicio.php';
             <td data-label="Ingreso"><?= $p['fecha_ingreso'] ? e(date('d/m/Y', strtotime($p['fecha_ingreso']))) : '' ?></td>
             <td data-label="Celular"><?= e($p['celular']) ?></td>
             <td data-label="Acciones" class="celda-acciones">
-                <?php /* Acciones: documentos, editar/ver según permiso, y eliminar con confirmación */ ?>
+                <?php /* Acciones: documentos, vista de solo lectura, edición y eliminación según permiso */ ?>
                 <a class="btn" href="rrhh_documentos.php?id=<?= (int)$p['id'] ?>">Documentos</a>
-                <a class="btn btn-sec" href="rrhh_ficha.php?id=<?= (int)$p['id'] ?>"><?= $puedeEditar ? 'Editar' : 'Ver' ?></a>
+                <a class="btn btn-sec btn-ver-ficha" href="rrhh_ficha.php?id=<?= (int)$p['id'] ?>&amp;modo=ver" aria-label="Ver ficha de <?= e(trim($p['apellido_paterno'] . ' ' . $p['apellido_materno'] . ' ' . $p['nombres'])) ?>" title="Ver ficha">
+                    <svg aria-hidden="true" focusable="false" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
+                    </svg>
+                </a>
+                <?php if ($puedeEditar): ?>
+                    <a class="btn btn-sec" href="rrhh_ficha.php?id=<?= (int)$p['id'] ?>">Editar</a>
+                <?php endif; ?>
                 <?php if ($puedeEliminar): ?>
                 <form method="POST" class="form-inline" onsubmit="return confirm('¿Eliminar esta ficha y sus datos asociados?');">
                     <input type="hidden" name="csrf" value="<?= e($_SESSION['csrf']) ?>">
