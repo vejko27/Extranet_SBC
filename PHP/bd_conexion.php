@@ -1,10 +1,12 @@
 <?php
+require_once __DIR__ . '/bd_credenciales.php';
+
 // Conexión MySQLi a la base de datos extranet_sbc; la usan los demás scripts con require.
 //Configuramos los datos de nuestro servidor de conexion, sea local, como tmb hosting
 $host='localhost';
 $basededatos ='extranet_sbc';
 $usuario ='root';
-$contraseña = '';
+$contraseña = obtenerContraseñaBD();
 //Luego de ello establecemos la conexion entre base de datos y algoritmo de desarrollo.
 $conexion = new mysqli($host, $usuario,$contraseña,$basededatos);
 

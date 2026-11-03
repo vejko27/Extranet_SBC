@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/bd_credenciales.php';
+
 // Función puede(): consulta si el rol actual tiene un permiso; exigirPermiso(): corta con 403 si no.
 // Permisos por rol y módulo. El Administrador (rol 1) siempre tiene todos los permisos.
 // Acciones válidas: ver, crear, editar, eliminar
@@ -20,7 +22,7 @@ function puede(string $modulo, string $accion): bool
     // Primera llamada: lee de la BD los permisos del rol por módulo
     if ($cache === null) {
         $cache = [];
-        $bd = new mysqli('localhost', 'root', '', 'extranet_sbc');
+        $bd = new mysqli('localhost', 'root', obtenerContraseñaBD(), 'extranet_sbc');
         $bd->set_charset('utf8mb4');
         $st = $bd->prepare(
             "SELECT m.nombre, p.ver, p.crear, p.editar, p.eliminar
