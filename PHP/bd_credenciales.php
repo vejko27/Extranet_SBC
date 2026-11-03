@@ -1,10 +1,36 @@
 <?php
+// Busca el archivo de credenciales: DB_CONFIG_FILE, luego Vcanova/bd_credenciales_local.php
+// en las carpetas superiores (fuera de public_html en producción) y por último PHP/bd_credenciales.local.php.
+function localizarConfigLocalBD(): ?string
+{
+    $ruta = getenv('DB_CONFIG_FILE');
+    if ($ruta !== false && $ruta !== '' && is_file($ruta)) {
+        return $ruta;
+    }
+
+    $dir = __DIR__;
+    while (true) {
+        $candidato = $dir . '/Vcanova/bd_credenciales_local.php';
+        if (is_file($candidato)) {
+            return $candidato;
+        }
+        $padre = dirname($dir);
+        if ($padre === $dir) {
+            break;
+        }
+        $dir = $padre;
+    }
+
+    $local = __DIR__ . '/bd_credenciales.local.php';
+    return is_file($local) ? $local : null;
+}
+
 // Lee la configuración local: puede devolver un string (solo la contraseña)
 // o un arreglo ['usuario' => '...', 'contraseña' => '...'].
 function cargarConfigLocalBD(): array
 {
-    $archivoLocal = __DIR__ . '/bd_credenciales.local.php';
-    if (!is_file($archivoLocal)) {
+    $archivoLocal = localizarConfigLocalBD();
+    if ($archivoLocal === null) {
         return [];
     }
     $config = require $archivoLocal;
