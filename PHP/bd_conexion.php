@@ -8,15 +8,16 @@ $basededatos = obtenerNombreBD();
 $usuario = obtenerUsuarioBD();
 $contraseña = obtenerContraseñaBD();
 //Luego de ello establecemos la conexion entre base de datos y algoritmo de desarrollo.
-$conexion = new mysqli($host, $usuario,$contraseña,$basededatos);
-
-//Luego habilitamos las condicionales
-
+// Sin excepciones de mysqli: el fallo se registra en el log y se responde con un mensaje genérico.
+mysqli_report(MYSQLI_REPORT_OFF);
 try {
+    $conexion = @new mysqli($host, $usuario, $contraseña, $basededatos);
     if ($conexion->connect_error) {
-        throw new Exception("Error de conexión: " . $conexion->connect_error);
+        throw new Exception($conexion->connect_error);
     }
-} catch (Exception $e) {
-    echo "Excepción capturada: " . $e->getMessage();
-}   
+} catch (Throwable $e) {
+    error_log("Extranet_SBC: fallo de conexión a la BD (usuario '$usuario', base '$basededatos'): " . $e->getMessage());
+    http_response_code(503);
+    exit('No se pudo conectar con la base de datos. Contacte al administrador.');
+}
 ?>
