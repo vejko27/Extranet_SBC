@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/bd_credenciales.php';
+require_once __DIR__ . '/bd_conexion.php';
 
 // Función puede(): consulta si el rol actual tiene un permiso; exigirPermiso(): corta con 403 si no.
 // Permisos por rol y módulo. El Administrador (rol 1) siempre tiene todos los permisos.
@@ -8,7 +9,6 @@ function puede(string $modulo, string $accion): bool
 {
     // Caché por petición: los permisos se cargan una sola vez
     static $cache = null;
-    static $bd = null;
 
     // Administrador: acceso total; rol o acción inválidos: denegado
     $rol = (int)($_SESSION['rol_id'] ?? 0);
@@ -22,9 +22,9 @@ function puede(string $modulo, string $accion): bool
     // Primera llamada: lee de la BD los permisos del rol por módulo
     if ($cache === null) {
         $cache = [];
-        $bd = new mysqli('localhost', 'root', obtenerContraseñaBD(), 'extranet_sbc');
-        $bd->set_charset('utf8mb4');
-        $st = $bd->prepare(
+        global $conexion;
+        $conexion->set_charset('utf8mb4');
+        $st = $conexion->prepare(
             "SELECT m.nombre, p.ver, p.crear, p.editar, p.eliminar
              FROM permisos p JOIN modulos m ON m.id = p.modulo_id WHERE p.rol_id = ?"
         );
@@ -33,7 +33,6 @@ function puede(string $modulo, string $accion): bool
         foreach ($st->get_result() as $f) {
             $cache[$f['nombre']] = $f;
         }
-        $bd->close();
     }
 
     // Devuelve true solo si el permiso está marcado para ese módulo
