@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // Módulo de proveedores homologados: listado por año, alta/edición/baja, cambio rápido de estados,
 // importación desde Excel (solo administrador) y búsqueda en vivo. Procesa los POST y muestra la página.
 // Variables de la página (usadas por el layout) y dependencias de sesión/BD
@@ -16,6 +16,14 @@ $esAdmin = (int)($_SESSION['rol_id'] ?? 0) === 1;
 
 // Charset de la conexión y token CSRF de la sesión
 $conexion->set_charset('utf8mb4');
+// Columnas de contacto: se crean si faltan (también en producción)
+foreach (['persona_contacto' => 120, 'correo' => 120, 'celular' => 20, 'pagina_web' => 200,
+    'cobranza_persona' => 120, 'cobranza_correo' => 120, 'cobranza_celular' => 20,
+    'pagos_persona' => 120, 'pagos_correo' => 120, 'pagos_celular' => 20] as $col => $largo) {
+    if ($conexion->query("SHOW COLUMNS FROM proveedores LIKE '$col'")->num_rows === 0) {
+        $conexion->query("ALTER TABLE proveedores ADD COLUMN `$col` VARCHAR($largo) NOT NULL DEFAULT ''");
+    }
+}
 if (empty($_SESSION['csrf'])) {
     $_SESSION['csrf'] = bin2hex(random_bytes(32));
 }
@@ -62,6 +70,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $cci3 = trim($_POST['cci3'] ?? '');
             $bancoDetracciones = trim($_POST['banco_detracciones'] ?? '');
             $cuentaDetracciones = trim($_POST['cuenta_detracciones'] ?? '');
+            $personaContacto = trim($_POST['persona_contacto'] ?? '');
+            $correo = trim($_POST['correo'] ?? '');
+            $celular = trim($_POST['celular'] ?? '');
+            $paginaWeb = trim($_POST['pagina_web'] ?? '');
+            // Si la web se escribe sin esquema, se asume https
+            if ($paginaWeb !== '' && !preg_match('#^[a-z][a-z0-9+.-]*://#i', $paginaWeb)) {
+                $paginaWeb = 'https://' . $paginaWeb;
+            }
+            $cobranzaPersona = trim($_POST['cobranza_persona'] ?? '');
+            $cobranzaCorreo = trim($_POST['cobranza_correo'] ?? '');
+            $cobranzaCelular = trim($_POST['cobranza_celular'] ?? '');
+            $pagosPersona = trim($_POST['pagos_persona'] ?? '');
+            $pagosCorreo = trim($_POST['pagos_correo'] ?? '');
+            $pagosCelular = trim($_POST['pagos_celular'] ?? '');
+            $contactoInvalido = mb_strlen($personaContacto) > 120
+                || ($correo !== '' && (mb_strlen($correo) > 120 || !filter_var($correo, FILTER_VALIDATE_EMAIL)))
+                || ($celular !== '' && !preg_match('/^[0-9+()\s-]{6,20}$/', $celular))
+                || ($paginaWeb !== '' && (mb_strlen($paginaWeb) > 200 || !filter_var($paginaWeb, FILTER_VALIDATE_URL)
+                    || !in_array(strtolower((string)parse_url($paginaWeb, PHP_URL_SCHEME)), ['http', 'https'], true)));
+            // Misma validación para los contactos de cobranza y de pagos
+            foreach ([[$cobranzaPersona, $cobranzaCorreo, $cobranzaCelular], [$pagosPersona, $pagosCorreo, $pagosCelular]] as [$cp, $cc, $ct]) {
+                if (mb_strlen($cp) > 120
+                    || ($cc !== '' && (mb_strlen($cc) > 120 || !filter_var($cc, FILTER_VALIDATE_EMAIL)))
+                    || ($ct !== '' && !preg_match('/^[0-9+()\s-]{6,20}$/', $ct))) {
+                    $contactoInvalido = true;
+                }
+            }
             $mes = $_POST['mes'] ?? '';
             $ac = $_POST['acuerdo_seguridad'] ?? '';
             $dj = $_POST['ddjj'] ?? '';
@@ -78,21 +113,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 || ($banco3 !== '' && !in_array($banco3, $BANCOS, true)) || mb_strlen($numeroCuenta3) > 30 || ($cci3 !== '' && !preg_match('/^\d{20}$/', $cci3))
                 || ($bancoDetracciones !== '' && $bancoDetracciones !== $BANCO_DETRACCIONES)
                 || mb_strlen($cuentaDetracciones) > 30
+                || $contactoInvalido
                 || !in_array($mes, $MESES, true) || ($nuevo && $mes === '')
                 || !in_array($ac, $TRI, true) || !in_array($dj, $TRI, true)
                 || !in_array($fi, $TRI, true) || !in_array($stt, $STATUS, true)
                 || !in_array($reg, $SINO, true) || ($nuevo && $reg === '')) {
-                $err = 'Revisa los datos: razón social y tipo son obligatorios; el RUC debe tener 11 dígitos cuando se indica, el banco debe estar en la lista y el CCI debe tener 20 dígitos.';
+                $err = 'Revisa los datos: razón social y tipo son obligatorios; el RUC debe tener 11 dígitos cuando se indica, el banco debe estar en la lista, el CCI debe tener 20 dígitos, y el correo, celular y página web deben tener un formato válido.';
             } elseif ($nuevo) {
                 // INSERT de un proveedor nuevo (consulta preparada)
-                $s = $conexion->prepare("INSERT INTO proveedores (razon_social,ruc,tipo,certificado,banco,numero_cuenta,cci,banco2,numero_cuenta2,cci2,banco3,numero_cuenta3,cci3,banco_detracciones,cuenta_detracciones,mes,acuerdo_seguridad,ddjj,filtros_aplicados,status,registrado_sistema) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
-                $s->bind_param('sssssssssssssssssssss', $razon, $ruc, $tipo, $cert, $banco, $numeroCuenta, $cci, $banco2, $numeroCuenta2, $cci2, $banco3, $numeroCuenta3, $cci3, $bancoDetracciones, $cuentaDetracciones, $mes, $ac, $dj, $fi, $stt, $reg);
+                $s = $conexion->prepare("INSERT INTO proveedores (razon_social,ruc,tipo,certificado,banco,numero_cuenta,cci,banco2,numero_cuenta2,cci2,banco3,numero_cuenta3,cci3,                banco_detracciones,cuenta_detracciones,                persona_contacto,correo,celular,pagina_web,cobranza_persona,cobranza_correo,cobranza_celular,pagos_persona,pagos_correo,pagos_celular,mes,acuerdo_seguridad,ddjj,filtros_aplicados,status,registrado_sistema) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+                                $s->bind_param(str_repeat('s', 31), $razon, $ruc, $tipo, $cert, $banco, $numeroCuenta, $cci, $banco2, $numeroCuenta2, $cci2, $banco3, $numeroCuenta3, $cci3, $bancoDetracciones, $cuentaDetracciones, $personaContacto, $correo, $celular, $paginaWeb, $cobranzaPersona, $cobranzaCorreo, $cobranzaCelular, $pagosPersona, $pagosCorreo, $pagosCelular, $mes, $ac, $dj, $fi, $stt, $reg);
                 $s->execute();
                 $ok = 'Proveedor agregado correctamente.';
             } else {
                 // UPDATE completo del proveedor existente
-                $s = $conexion->prepare("UPDATE proveedores SET razon_social=?,ruc=?,tipo=?,certificado=?,banco=?,numero_cuenta=?,cci=?,banco2=?,numero_cuenta2=?,cci2=?,banco3=?,numero_cuenta3=?,cci3=?,banco_detracciones=?,cuenta_detracciones=?,mes=?,acuerdo_seguridad=?,ddjj=?,filtros_aplicados=?,status=?,registrado_sistema=? WHERE id=?");
-                $s->bind_param('sssssssssssssssssssssi', $razon, $ruc, $tipo, $cert, $banco, $numeroCuenta, $cci, $banco2, $numeroCuenta2, $cci2, $banco3, $numeroCuenta3, $cci3, $bancoDetracciones, $cuentaDetracciones, $mes, $ac, $dj, $fi, $stt, $reg, $id);
+                $s = $conexion->prepare("UPDATE proveedores SET razon_social=?,ruc=?,tipo=?,certificado=?,banco=?,numero_cuenta=?,cci=?,banco2=?,numero_cuenta2=?,cci2=?,banco3=?,numero_cuenta3=?,cci3=?,banco_detracciones=?,                cuenta_detracciones=?,persona_contacto=?,correo=?,celular=?,                pagina_web=?,cobranza_persona=?,cobranza_correo=?,cobranza_celular=?,pagos_persona=?,pagos_correo=?,pagos_celular=?,mes=?,acuerdo_seguridad=?,ddjj=?,filtros_aplicados=?,status=?,registrado_sistema=? WHERE id=?");
+                                $s->bind_param(str_repeat('s', 31) . 'i', $razon, $ruc, $tipo, $cert, $banco, $numeroCuenta, $cci, $banco2, $numeroCuenta2, $cci2, $banco3, $numeroCuenta3, $cci3, $bancoDetracciones, $cuentaDetracciones, $personaContacto, $correo, $celular, $paginaWeb, $cobranzaPersona, $cobranzaCorreo, $cobranzaCelular, $pagosPersona, $pagosCorreo, $pagosCelular, $mes, $ac, $dj, $fi, $stt, $reg, $id);
                 $s->execute();
                 $ok = 'Proveedor actualizado correctamente.';
             }
@@ -360,6 +396,31 @@ require __DIR__ . '/layout_inicio.php';
                 </div>
             </section>
             <section class="form-prov-seccion">
+                <h3>Contacto</h3>
+                <div class="form-prov-grid">
+                    <div class="form-grupo form-prov-ancho"><label for="f_persona_contacto">Persona de contacto</label><input type="text" name="persona_contacto" id="f_persona_contacto" maxlength="120"></div>
+                    <div class="form-grupo"><label for="f_correo">Correo electrónico</label><input type="email" name="correo" id="f_correo" maxlength="120"></div>
+                    <div class="form-grupo"><label for="f_celular">Número de celular</label><input type="tel" name="celular" id="f_celular" maxlength="20" pattern="[0-9+()\s\-]{6,20}" title="Solo números, espacios, + ( ) -"></div>
+                    <div class="form-grupo form-prov-ancho"><label for="f_pagina_web">Página web</label><input type="text" name="pagina_web" id="f_pagina_web" maxlength="200" placeholder="https://www.ejemplo.com"></div>
+                </div>
+            </section>
+            <section class="form-prov-seccion">
+                <h3>Contacto de cobranza</h3>
+                <div class="form-prov-grid">
+                    <div class="form-grupo form-prov-ancho"><label for="f_cobranza_persona">Persona de contacto</label><input type="text" name="cobranza_persona" id="f_cobranza_persona" maxlength="120"></div>
+                    <div class="form-grupo"><label for="f_cobranza_correo">Correo electrónico</label><input type="email" name="cobranza_correo" id="f_cobranza_correo" maxlength="120"></div>
+                    <div class="form-grupo"><label for="f_cobranza_celular">Número de celular</label><input type="tel" name="cobranza_celular" id="f_cobranza_celular" maxlength="20" pattern="[0-9+()\s\-]{6,20}" title="Solo números, espacios, + ( ) -"></div>
+                </div>
+            </section>
+            <section class="form-prov-seccion">
+                <h3>Contacto de pagos</h3>
+                <div class="form-prov-grid">
+                    <div class="form-grupo form-prov-ancho"><label for="f_pagos_persona">Persona de contacto</label><input type="text" name="pagos_persona" id="f_pagos_persona" maxlength="120"></div>
+                    <div class="form-grupo"><label for="f_pagos_correo">Correo electrónico</label><input type="email" name="pagos_correo" id="f_pagos_correo" maxlength="120"></div>
+                    <div class="form-grupo"><label for="f_pagos_celular">Número de celular</label><input type="tel" name="pagos_celular" id="f_pagos_celular" maxlength="20" pattern="[0-9+()\s\-]{6,20}" title="Solo números, espacios, + ( ) -"></div>
+                </div>
+            </section>
+            <section class="form-prov-seccion">
                 <h3>Cuenta de detracciones</h3>
                 <div class="form-prov-grid">
                     <div class="form-grupo"><label for="f_banco_detracciones">Banco de la Nación</label><select name="banco_detracciones" id="f_banco_detracciones"><option value="">— Seleccionar —</option><option value="<?= e($BANCO_DETRACCIONES) ?>"><?= e($BANCO_DETRACCIONES) ?></option></select></div>
@@ -407,7 +468,7 @@ require __DIR__ . '/layout_inicio.php';
 <script>
     // Control del modal: abrir() lo rellena con el proveedor (editar) o con valores por defecto (nuevo)
     const modal = document.getElementById("modal-prov");
-    const campos = ["razon_social","ruc","tipo","certificado","banco","numero_cuenta","cci","banco2","numero_cuenta2","cci2","banco3","numero_cuenta3","cci3","banco_detracciones","cuenta_detracciones","mes","acuerdo_seguridad","ddjj","filtros_aplicados","status","registrado_sistema"];
+    const campos = ["razon_social","ruc","tipo","certificado","banco","numero_cuenta","cci","banco2","numero_cuenta2","cci2","banco3","numero_cuenta3","cci3","banco_detracciones","cuenta_detracciones","persona_contacto","correo","celular","pagina_web","cobranza_persona","cobranza_correo","cobranza_celular","pagos_persona","pagos_correo","pagos_celular","mes","acuerdo_seguridad","ddjj","filtros_aplicados","status","registrado_sistema"];
     function abrir(p) {
         document.getElementById("m_titulo").textContent = p ? "Editar proveedor" : "Agregar proveedor";
         document.getElementById("f_id").value = p ? p.id : 0;
@@ -448,6 +509,31 @@ require __DIR__ . '/layout_inicio.php';
                 ["RUC", "ruc"],
                 ["Tipo de proveedor", "tipo"],
                 ["Certificado", "certificado"],
+            ],
+        },
+        {
+            seccion: "Contacto",
+            campos: [
+                ["Persona de contacto", "persona_contacto"],
+                ["Correo electrónico", "correo"],
+                ["Número de celular", "celular"],
+                ["Página web", "pagina_web"],
+            ],
+        },
+        {
+            seccion: "Contacto de cobranza",
+            campos: [
+                ["Persona de contacto", "cobranza_persona"],
+                ["Correo electrónico", "cobranza_correo"],
+                ["Número de celular", "cobranza_celular"],
+            ],
+        },
+        {
+            seccion: "Contacto de pagos",
+            campos: [
+                ["Persona de contacto", "pagos_persona"],
+                ["Correo electrónico", "pagos_correo"],
+                ["Número de celular", "pagos_celular"],
             ],
         },
         {

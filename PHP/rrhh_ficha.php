@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // Ficha de datos del personal: formulario para crear/editar/ver (solo lectura) una ficha
 // con datos del empleado, domicilio, contacto, banco, emergencia, cónyuge e hijos.
 // Valida y guarda todo en una transacción.

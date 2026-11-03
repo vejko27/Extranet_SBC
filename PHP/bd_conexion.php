@@ -16,7 +16,9 @@ try {
         throw new Exception($conexion->connect_error);
     }
 } catch (Throwable $e) {
-    error_log("Extranet_SBC: fallo de conexión a la BD (usuario '$usuario', base '$basededatos'): " . $e->getMessage());
+    $archivoCfg = localizarConfigLocalBD();
+    $clavesCfg = $archivoCfg === null ? '-' : implode(',', array_keys(cargarConfigLocalBD()));
+    error_log("Extranet_SBC: fallo de conexión a la BD (usuario '$usuario', base '$basededatos', config: " . ($archivoCfg ?? 'NO ENCONTRADO') . ", claves: $clavesCfg): " . $e->getMessage());
     http_response_code(503);
     exit('No se pudo conectar con la base de datos. Contacte al administrador.');
 }

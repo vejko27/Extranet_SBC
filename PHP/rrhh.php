@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // Listado de Recursos Humanos: muestra las fichas del personal con búsqueda,
 // y permite crear/editar/ver fichas, abrir documentos y eliminar fichas según permisos.
 // Variables de la página para el layout (menú activo y título)
