@@ -1,6 +1,6 @@
 <?php
 // Página de inicio/login: redirige al panel si ya hay sesión y muestra el formulario de acceso.
-session_start();
+require_once __DIR__ . '/PHP/sesion.php';
 // Si el usuario ya inició sesión, va directo al dashboard
 if (isset($_SESSION['id_usuario'])) {
     header('Location: PHP/dashboard.php');

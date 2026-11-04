@@ -12,6 +12,12 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
+// Protección CSRF
+if (!hash_equals($_SESSION['csrf'] ?? '', $_POST['csrf'] ?? '')) {
+    header('Location: registrar.php?msg=error');
+    exit;
+}
+
 // Lectura y limpieza de los datos del formulario
 $nombre = trim($_POST['nombre'] ?? '');
 $usuario = trim($_POST['usuario'] ?? '');

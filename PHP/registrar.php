@@ -33,6 +33,7 @@ $msg = $_GET['msg'] ?? '';
 <!-- Formulario de alta: envía los datos por POST a guardar_usuario.php -->
 <div class="card" style="max-width:520px">
     <form action="guardar_usuario.php" method="POST">
+        <input type="hidden" name="csrf" value="<?= htmlspecialchars($_SESSION['csrf'] ?? '') ?>">
         <div class="form-grupo">
             <label>Nombre y apellido</label>
             <input type="text" name="nombre" required>

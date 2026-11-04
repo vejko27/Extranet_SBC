@@ -1,1 +1,6 @@
 /PHP/bd_credenciales.local.php
+*.local.php
+contraseña.txt
+error_log
+/Documentos_Personal/*
+!/Documentos_Personal/.htaccess

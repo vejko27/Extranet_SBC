@@ -15,7 +15,7 @@ window.renderPdfReader = async (reader) => {
   status.textContent = "Cargando documento...";
 
   try {
-    const pdf = await pdfjsLib.getDocument(reader.dataset.pdf).promise;
+    const pdf = await pdfjsLib.getDocument({ url: reader.dataset.pdf, isEvalSupported: false }).promise;
     if (reader.renderGeneration !== generation) return;
 
     status.textContent = `Cargando 1 de ${pdf.numPages} páginas...`;

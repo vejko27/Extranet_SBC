@@ -1,6 +1,6 @@
 <?php
 // Valida las credenciales enviadas desde index.php e inicia la sesión del usuario.
-session_start();
+require __DIR__ . '/sesion.php';
 require 'bd_conexion.php';
 
 // Solo se acepta POST; cualquier otro acceso vuelve al inicio
@@ -12,6 +12,12 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 // Datos recibidos del formulario
 $usuario = $_POST['usuario'] ?? '';
 $password = $_POST['password'] ?? '';
+
+// Límite de intentos: 5 fallos por sesión bloquean 5 minutos
+if (($_SESSION['login_bloqueo'] ?? 0) > time()) {
+    header('Location: ../index.php?error=credenciales');
+    exit;
+}
 
 // Busca al usuario por nombre de usuario con consulta preparada
 $stmt = $conexion->prepare("SELECT * FROM usuarios WHERE usuario = ?");
@@ -32,6 +38,8 @@ if ($resultado->num_rows > 0) {
 
         // Login correcto: renueva el id de sesión y guarda los datos del usuario
         session_regenerate_id(true);
+        unset($_SESSION['login_fallos'], $_SESSION['login_bloqueo']);
+        $_SESSION['csrf'] = bin2hex(random_bytes(32));
         $_SESSION['id_usuario'] = $user['id'];
         $_SESSION['rol_id'] = $user['rol_id'];
         $_SESSION['nombre'] = $user['nombre'];
@@ -42,5 +50,10 @@ if ($resultado->num_rows > 0) {
 }
 
 // Usuario inexistente o contraseña incorrecta
+$_SESSION['login_fallos'] = ($_SESSION['login_fallos'] ?? 0) + 1;
+if ($_SESSION['login_fallos'] >= 5) {
+    $_SESSION['login_bloqueo'] = time() + 300;
+    $_SESSION['login_fallos'] = 0;
+}
 header('Location: ../index.php?error=credenciales');
 exit;
