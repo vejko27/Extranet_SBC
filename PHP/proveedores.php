@@ -322,7 +322,9 @@ require __DIR__ . '/layout_inicio.php';
 </div>
 
 <?php /* Tabla de proveedores: encabezados, mensaje de vacío y una fila por proveedor */ ?>
-<div class="card tabla-scroll">
+<div class="card">
+<div class="scroll-superior" id="scroll-sup" aria-hidden="true"><div></div></div>
+<div class="tabla-scroll" id="scroll-tabla">
     <table class="tabla-prov">
         <tr>
             <th>N°</th><th>Razón social</th><th>RUC</th><th>Tipo</th><th>Certificado</th><th>Mes</th>
@@ -368,6 +370,24 @@ require __DIR__ . '/layout_inicio.php';
         <?php endforeach; ?>
     </table>
 </div>
+</div>
+<script>
+(function () {
+    var sup = document.getElementById('scroll-sup'), tab = document.getElementById('scroll-tabla');
+    if (!sup || !tab) return;
+    var tabla = tab.querySelector('table'), lock = false;
+    function medir() {
+        sup.firstElementChild.style.width = tabla.scrollWidth + 'px';
+        sup.style.display = tab.scrollWidth > tab.clientWidth + 1 ? 'block' : 'none';
+    }
+    function sync(a, b) { return function () { if (lock) { lock = false; return; } lock = true; b.scrollLeft = a.scrollLeft; }; }
+    sup.addEventListener('scroll', sync(sup, tab));
+    tab.addEventListener('scroll', sync(tab, sup));
+    window.addEventListener('resize', medir);
+    window.addEventListener('load', medir);
+    medir();
+})();
+</script>
 
 <?php /* Modal de alta/edición (solo con permiso de crear o editar) */ ?>
 <?php if ($puedeCrear || $puedeEditar): ?>
