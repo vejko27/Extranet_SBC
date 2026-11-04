@@ -192,34 +192,40 @@ require __DIR__ . '/layout_inicio.php';
             </td>
             <td data-label="Acciones" class="celda-acciones">
                 <?php /* Acciones: documentos, vista de solo lectura, edición y eliminación según permiso */ ?>
-                <a class="btn" href="rrhh_documentos.php?id=<?= (int)$p['id'] ?>">Documentos</a>
-                <a class="btn btn-sec btn-ver-ficha" href="rrhh_ficha.php?id=<?= (int)$p['id'] ?>&amp;modo=ver" aria-label="Ver ficha de <?= e(trim($p['apellido_paterno'] . ' ' . $p['apellido_materno'] . ' ' . $p['nombres'])) ?>" title="Ver ficha">
-                    <svg aria-hidden="true" focusable="false" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
-                    </svg>
-                </a>
-                <?php if ($puedeEditar): ?>
-                    <a class="btn btn-sec" href="rrhh_ficha.php?id=<?= (int)$p['id'] ?>">Editar</a>
-                    <form method="POST" class="form-inline rrhh-toggle-form">
-                        <input type="hidden" name="csrf" value="<?= e($_SESSION['csrf']) ?>">
-                        <input type="hidden" name="accion" value="toggle_baja">
-                        <input type="hidden" name="id" value="<?= (int)$p['id'] ?>">
-                        <input type="hidden" name="estado" value="<?= (($p['estado'] ?? 'activo') === 'baja') ? 'activo' : 'baja' ?>">
-                        <input type="date" name="fecha_baja" value="<?= e($p['fecha_baja'] ?? '') ?>" class="input-fecha-baja" aria-label="Fecha de baja">
-                        <button type="submit" class="btn <?= (($p['estado'] ?? 'activo') === 'baja') ? 'btn-ok' : 'btn-peligro' ?>">
-                            <?= (($p['estado'] ?? 'activo') === 'baja') ? 'Reactivar' : 'Dar de baja' ?>
-                        </button>
-                    </form>
-                <?php endif; ?>
-                <?php if ($puedeEliminar): ?>
-                <form method="POST" class="form-inline" onsubmit="return confirm('¿Eliminar esta ficha y sus datos asociados?');">
-                    <input type="hidden" name="csrf" value="<?= e($_SESSION['csrf']) ?>">
-                    <input type="hidden" name="accion" value="eliminar">
-                    <input type="hidden" name="id" value="<?= (int)$p['id'] ?>">
-                    <button type="submit" class="btn-peligro">Eliminar</button>
-                </form>
-                <?php endif; ?>
+                <div class="rrhh-acciones">
+                    <div class="rrhh-acciones-principales">
+                        <a class="btn" href="rrhh_documentos.php?id=<?= (int)$p['id'] ?>">Documentos</a>
+                        <a class="btn btn-sec btn-ver-ficha" href="rrhh_ficha.php?id=<?= (int)$p['id'] ?>&amp;modo=ver" aria-label="Ver ficha de <?= e(trim($p['apellido_paterno'] . ' ' . $p['apellido_materno'] . ' ' . $p['nombres'])) ?>" title="Ver ficha">
+                            <svg aria-hidden="true" focusable="false" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
+                            </svg>
+                        </a>
+                        <?php if ($puedeEditar): ?>
+                            <a class="btn btn-sec" href="rrhh_ficha.php?id=<?= (int)$p['id'] ?>">Editar</a>
+                        <?php endif; ?>
+                    </div>
+                    <?php if ($puedeEditar): ?>
+                        <form method="POST" class="form-inline rrhh-toggle-form">
+                            <input type="hidden" name="csrf" value="<?= e($_SESSION['csrf']) ?>">
+                            <input type="hidden" name="accion" value="toggle_baja">
+                            <input type="hidden" name="id" value="<?= (int)$p['id'] ?>">
+                            <input type="hidden" name="estado" value="<?= (($p['estado'] ?? 'activo') === 'baja') ? 'activo' : 'baja' ?>">
+                            <input type="date" name="fecha_baja" value="<?= e($p['fecha_baja'] ?? '') ?>" class="input-fecha-baja" aria-label="Fecha de baja">
+                            <button type="submit" class="btn <?= (($p['estado'] ?? 'activo') === 'baja') ? 'btn-ok' : 'btn-peligro' ?>">
+                                <?= (($p['estado'] ?? 'activo') === 'baja') ? 'Reactivar' : 'Dar de baja' ?>
+                            </button>
+                        </form>
+                    <?php endif; ?>
+                    <?php if ($puedeEliminar): ?>
+                        <form method="POST" class="form-inline" onsubmit="return confirm('¿Eliminar esta ficha y sus datos asociados?');">
+                            <input type="hidden" name="csrf" value="<?= e($_SESSION['csrf']) ?>">
+                            <input type="hidden" name="accion" value="eliminar">
+                            <input type="hidden" name="id" value="<?= (int)$p['id'] ?>">
+                            <button type="submit" class="btn-peligro">Eliminar</button>
+                        </form>
+                    <?php endif; ?>
+                </div>
             </td>
         </tr>
         <?php endforeach; ?>
