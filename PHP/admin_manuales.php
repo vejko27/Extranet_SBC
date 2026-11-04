@@ -39,7 +39,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $desc = trim($_POST['descripcion'] ?? '');
         $f =  $_FILES['pdf'] ?? null;
 
-        if ($titulo === '' || !$f || $f['error'] !== UPLOAD_ERR_OK) {
+        if ($f && $f['error'] !== UPLOAD_ERR_OK && $f['error'] !== UPLOAD_ERR_NO_FILE) {
+            $motivos = [
+                UPLOAD_ERR_INI_SIZE => 'supera upload_max_filesize del servidor (' . ini_get('upload_max_filesize') . ')',
+                UPLOAD_ERR_FORM_SIZE => 'supera el tamaño permitido por el formulario',
+                UPLOAD_ERR_PARTIAL => 'se subió de forma incompleta',
+                UPLOAD_ERR_NO_TMP_DIR => 'falta la carpeta temporal del servidor',
+                UPLOAD_ERR_CANT_WRITE => 'no se pudo escribir en disco',
+                UPLOAD_ERR_EXTENSION => 'una extensión de PHP bloqueó la subida',
+            ];
+            $err = 'Error al subir el archivo: ' . ($motivos[$f['error']] ?? 'código ' . $f['error']) . '.';
+        } elseif ($titulo === '' || !$f || $f['error'] !== UPLOAD_ERR_OK) {
             $err = 'Completa el título y selecciona un PDF válido (máx. 40 MB).';
         } elseif (strtolower(pathinfo($f['name'], PATHINFO_EXTENSION)) !== 'pdf'
             || file_get_contents($f['tmp_name'], false, null, 0, 5) !== '%PDF-') {
