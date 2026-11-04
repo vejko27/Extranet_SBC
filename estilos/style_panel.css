@@ -195,10 +195,8 @@ dialog { max-height: 92vh; overflow-y: auto; }
 .prov-porcentaje { display: flex; align-items: center; gap: 12px; background: #006d88; color: #fff; padding: 10px 16px; border-radius: 10px; font-weight: 700; }
 .prov-porcentaje strong { background: #fff; color: #0f172a; padding: 4px 14px; border-radius: 6px; font-size: 18px; }
 .tabla-scroll { overflow-x: auto; }
-.scroll-superior { overflow-x: auto; overflow-y: hidden; display: none; position: sticky; top: 0; z-index: 5; background: #fff; margin-bottom: 6px; }
-.scroll-superior > div { height: 14px; }
 .tabla-prov { min-width: 1250px; }
-@media (max-width: 800px) { .scroll-superior { display: none !important; } .tabla-prov { min-width: 0; } }
+@media (max-width: 800px) { .tabla-prov { min-width: 0; } }
 .prov-barra { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
 .prov-anio { display: flex; align-items: center; gap: 8px; font-weight: 600; color: #475569; }
 .prov-import { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 14px 18px; }
