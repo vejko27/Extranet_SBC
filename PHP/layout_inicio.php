@@ -37,7 +37,7 @@ $manualActivo = $paginaActiva === 'manuales' ? (string)($_GET['m'] ?? array_key_
     <aside class="sidebar">
         <div class="sidebar-cabecera">
             <div class="marca">Extranet <span>SBC</span></div>
-            <button type="button" class="sidebar-colapsar" id="toggle-sidebar" aria-label="Contraer menú" aria-expanded="true" title="Contraer menú">‹</button>
+            <button type="button" class="sidebar-colapsar" id="toggle-sidebar" aria-label="Abrir menú" aria-expanded="false" title="Abrir menú">‹</button>
         </div>
         <!-- Menú lateral: cada enlace aparece solo si el usuario tiene el permiso -->
         <nav>

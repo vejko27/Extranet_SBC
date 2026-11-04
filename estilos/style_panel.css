@@ -234,12 +234,12 @@ dialog { max-height: 92vh; overflow-y: auto; }
 
 @media (max-width: 800px) {
     .layout { flex-direction: column; }
-    .sidebar { width: 100%; height: auto; position: static; padding: 14px; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 8px; }
+    .sidebar { width: 100%; height: auto; position: sticky; top: 0; z-index: 20; padding: 12px 14px; flex-direction: column; flex-wrap: nowrap; align-items: stretch; gap: 0; box-shadow: 0 4px 12px rgba(15, 23, 42, .16); }
     .sidebar { flex-basis: auto; }
     .sidebar-cabecera { width: 100%; align-items: center; }
-    .sidebar .marca { flex: 1; padding: 0 4px 6px; }
-    .sidebar nav { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
-    .sidebar a { margin-bottom: 0; padding: 9px 12px; font-size: 14px; }
+    .sidebar .marca { flex: 1; padding: 0; }
+    .sidebar nav { display: none; flex: none; overflow: visible; margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(226, 232, 240, .2); }
+    .sidebar a { margin-bottom: 0; padding: 11px 12px; font-size: 14px; }
     .contenido { padding: 18px 14px; }
     .contenido h1 { font-size: 22px; }
     .card { padding: 16px; }
@@ -277,11 +277,28 @@ dialog { max-height: 92vh; overflow-y: auto; }
 }
 
 @media (max-width: 800px) {
-    html.sidebar-colapsado .sidebar { width: 100%; min-height: 56px; padding: 8px 14px; }
-    html.sidebar-colapsado .sidebar-cabecera { justify-content: flex-end; }
-    html.sidebar-colapsado .sidebar .marca,
-    html.sidebar-colapsado .sidebar nav,
-    html.sidebar-colapsado .sidebar > a.salir { display: none; }
+    html.sidebar-colapsado .sidebar { width: 100%; min-height: 0; flex-basis: auto; padding: 12px 14px; }
+    html.sidebar-colapsado .sidebar-cabecera { justify-content: space-between; }
+    html.sidebar-colapsado .sidebar .marca { display: block; flex: 1; padding: 0; font-size: 20px; text-align: left; }
+    html.sidebar-colapsado .sidebar .marca::before { content: none; }
+    .sidebar-colapsar { display: grid; place-items: center; font-size: 0; }
+    .sidebar-colapsar::before { content: "☰"; font-size: 20px; }
+    .sidebar-movil-abierto .sidebar-colapsar::before { content: "×"; font-size: 24px; }
+    html.sidebar-colapsado .sidebar nav { display: none; margin-top: 10px; padding-top: 8px; }
+    .sidebar-movil-abierto .sidebar nav { display: flex; flex-direction: column; gap: 2px; }
+    html.sidebar-colapsado .sidebar nav > a,
+    html.sidebar-colapsado .sidebar > a.salir { padding: 11px 12px; font-size: 14px; text-align: left; }
+    html.sidebar-colapsado .sidebar nav > a::before,
+    html.sidebar-colapsado .sidebar > a.salir::before { content: none; }
+    html.sidebar-colapsado .sidebar .grupo-toggle { justify-content: space-between; padding: 14px 12px 6px; font-size: 12px; }
+    html.sidebar-colapsado .sidebar .grupo-nombre,
+    html.sidebar-colapsado .sidebar .grupo-toggle .flecha { display: inline; }
+    html.sidebar-colapsado .sidebar .grupo-toggle::before { content: none; }
+    html.sidebar-colapsado.sidebar-movil-abierto .sidebar .submenu { display: flex; }
+    html.sidebar-movil-abierto .sidebar .submenu[hidden] { display: none; }
+    .sidebar > a.salir { display: none; margin-top: 8px; }
+    .sidebar-movil-abierto.sidebar-colapsado .sidebar > a.salir,
+    .sidebar-movil-abierto:not(.sidebar-colapsado) .sidebar > a.salir { display: block; }
 }
 
 .tabla-prov tr[hidden] { display: none !important; }
