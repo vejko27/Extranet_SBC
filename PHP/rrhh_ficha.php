@@ -713,5 +713,37 @@ $nombreTitular = trim($fd['apellido_paterno'] . ' ' . $fd['apellido_materno'] . 
 </script>
 <?php endif; ?>
 
+<div class="ficha-scroll-inferior" id="ficha-scroll-inferior" role="region" aria-label="Desplazamiento horizontal" tabindex="0" hidden>
+    <div></div>
+</div>
+<script>
+    (() => {
+        const barra = document.getElementById("ficha-scroll-inferior");
+        const contenido = barra.firstElementChild;
+        let sincronizando = false;
+
+        const actualizar = () => {
+            contenido.style.width = document.documentElement.scrollWidth + "px";
+            barra.hidden = document.documentElement.scrollWidth <= document.documentElement.clientWidth;
+            barra.scrollLeft = window.scrollX;
+        };
+
+        barra.addEventListener("scroll", () => {
+            if (sincronizando) return;
+            sincronizando = true;
+            window.scrollTo(barra.scrollLeft, window.scrollY);
+            sincronizando = false;
+        });
+        window.addEventListener("scroll", () => {
+            if (sincronizando) return;
+            sincronizando = true;
+            barra.scrollLeft = window.scrollX;
+            sincronizando = false;
+        }, { passive: true });
+        window.addEventListener("resize", actualizar);
+        actualizar();
+    })();
+</script>
+
 <?php /* Pie común del layout */ ?>
 <?php require __DIR__ . '/layout_fin.php'; ?>

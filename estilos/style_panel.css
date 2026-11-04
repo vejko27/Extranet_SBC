@@ -325,3 +325,6 @@ dialog { max-height: 92vh; overflow-y: auto; }
 .ficha-identidad { display: flex; align-items: center; gap: 28px; padding: 8px 0 20px 12px; }
 .ficha-foto { width: 96px; height: 120px; margin: 4px 12px 4px 0; object-fit: cover; border: 1px solid #e2e8f0; border-radius: 10px; background: #fff; box-shadow: 0 2px 8px rgba(15, 23, 42, .12); }
 .ficha-check { display: flex; align-items: center; gap: 8px; height: 44px; font-weight: 600; }
+.ficha-scroll-inferior { position: fixed; z-index: 30; right: 0; bottom: 0; left: 0; height: 16px; overflow-x: auto; overflow-y: hidden; background: #fff; }
+.ficha-scroll-inferior > div { height: 1px; }
+.ficha-scroll-inferior[hidden] { display: none; }
