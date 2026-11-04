@@ -32,6 +32,7 @@ function e($v) { return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
 
 // Listas de valores permitidos (también sirven para validar los POST)
 $MESES = ['', 'ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SET','OCT','NOV','DIC'];
+$CERTIFICADOS = ['BASC', 'OEA', 'NA', 'NO TIENE'];
 $TRI = ['SI','NO','NO APLICA'];
 $STATUS = ['PENDIENTE','HOMOLOGADO'];
 $SINO = ['', 'SI','NO'];
@@ -98,6 +99,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
             $mes = $_POST['mes'] ?? '';
+            $certificadoValido = $cert === '' || in_array($cert, $CERTIFICADOS, true);
+            if (!$certificadoValido && !$nuevo) {
+                $s = $conexion->prepare("SELECT certificado FROM proveedores WHERE id=? LIMIT 1");
+                $s->bind_param('i', $id);
+                $s->execute();
+                $certificadoActual = $s->get_result()->fetch_column();
+                $certificadoValido = $certificadoActual !== false && $cert === $certificadoActual;
+            }
             $ac = $_POST['acuerdo_seguridad'] ?? '';
             $dj = $_POST['ddjj'] ?? '';
             $fi = $_POST['filtros_aplicados'] ?? '';
@@ -105,7 +114,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $reg = $_POST['registrado_sistema'] ?? '';
             // Las altas exigen los datos identificadores; en ediciones se permiten vacíos por completar.
             if ($razon === '' || ($ruc === '' ? $nuevo : !preg_match('/^\d{11}$/', $ruc)) || $tipo === '' || mb_strlen($razon) > 200
-                || mb_strlen($tipo) > 40 || mb_strlen($cert) > 60
+                || mb_strlen($tipo) > 40 || mb_strlen($cert) > 60 || !$certificadoValido
                 || ($banco !== '' && !in_array($banco, $BANCOS, true))
                 || mb_strlen($numeroCuenta) > 30
                 || ($cci !== '' && !preg_match('/^\d{20}$/', $cci))
@@ -118,7 +127,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 || !in_array($ac, $TRI, true) || !in_array($dj, $TRI, true)
                 || !in_array($fi, $TRI, true) || !in_array($stt, $STATUS, true)
                 || !in_array($reg, $SINO, true) || ($nuevo && $reg === '')) {
-                $err = 'Revisa los datos: razón social y tipo son obligatorios; el RUC debe tener 11 dígitos cuando se indica, el banco debe estar en la lista, el CCI debe tener 20 dígitos, y el correo, celular y página web deben tener un formato válido.';
+                $err = 'Revisa los datos: razón social y tipo son obligatorios; selecciona un certificado válido, verifica el RUC, los bancos, el CCI, el correo, celular y página web.';
             } elseif ($nuevo) {
                 // INSERT de un proveedor nuevo (consulta preparada)
                 $s = $conexion->prepare("INSERT INTO proveedores (razon_social,ruc,tipo,certificado,banco,numero_cuenta,cci,banco2,numero_cuenta2,cci2,banco3,numero_cuenta3,cci3,                banco_detracciones,cuenta_detracciones,                persona_contacto,correo,celular,pagina_web,cobranza_persona,cobranza_correo,cobranza_celular,pagos_persona,pagos_correo,pagos_celular,mes,acuerdo_seguridad,ddjj,filtros_aplicados,status,registrado_sistema) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
@@ -394,7 +403,7 @@ require __DIR__ . '/layout_inicio.php';
                     <div class="form-grupo"><label for="f_ruc">RUC</label><input type="text" name="ruc" id="f_ruc" inputmode="numeric" pattern="\d{11}" maxlength="11" title="11 dígitos"></div>
                     <div class="form-grupo"><label for="f_tipo">Tipo</label><input type="text" name="tipo" id="f_tipo" list="tipos" maxlength="40" required>
                         <datalist id="tipos"><option value="TRANSPORTE"><option value="RESGUARDO"></datalist></div>
-                    <div class="form-grupo"><label for="f_certificado">Certificado</label><input type="text" name="certificado" id="f_certificado" maxlength="60"></div>
+                    <div class="form-grupo"><label for="f_certificado">Certificado</label><select name="certificado" id="f_certificado"><?php opciones(array_merge([''], $CERTIFICADOS)); ?></select></div>
                 </div>
             </section>
             <section class="form-prov-seccion">
@@ -470,14 +479,24 @@ require __DIR__ . '/layout_inicio.php';
 <script>
     // Control del modal: abrir() lo rellena con el proveedor (editar) o con valores por defecto (nuevo)
     const modal = document.getElementById("modal-prov");
+    const mesActual = <?= json_encode($MESES[(int)date('n')], JSON_UNESCAPED_UNICODE) ?>;
     const campos = ["razon_social","ruc","tipo","certificado","banco","numero_cuenta","cci","banco2","numero_cuenta2","cci2","banco3","numero_cuenta3","cci3","banco_detracciones","cuenta_detracciones","persona_contacto","correo","celular","pagina_web","cobranza_persona","cobranza_correo","cobranza_celular","pagos_persona","pagos_correo","pagos_celular","mes","acuerdo_seguridad","ddjj","filtros_aplicados","status","registrado_sistema"];
     function abrir(p) {
         document.getElementById("m_titulo").textContent = p ? "Editar proveedor" : "Agregar proveedor";
         document.getElementById("f_id").value = p ? p.id : 0;
         document.getElementById("f_ruc").required = !p;
+        const certificado = document.getElementById("f_certificado");
+        certificado.querySelectorAll("option[data-legacy]").forEach((opcion) => opcion.remove());
+        if (p && p.certificado && !Array.from(certificado.options).some((opcion) => opcion.value === p.certificado)) {
+            const opcion = document.createElement("option");
+            opcion.value = p.certificado;
+            opcion.textContent = p.certificado + " (valor anterior)";
+            opcion.dataset.legacy = "true";
+            certificado.append(opcion);
+        }
         campos.forEach((c) => {
             const el = document.getElementById("f_" + c);
-            el.value = p ? p[c] : (c === "tipo" ? "TRANSPORTE" : (el.tagName === "SELECT" ? (c === "status" ? "PENDIENTE" : (c === "mes" ? "ENE" : (c === "banco" || c === "banco2" || c === "banco3" || c === "banco_detracciones" ? "" : "NO"))) : ""));
+            el.value = p ? p[c] : (c === "tipo" ? "TRANSPORTE" : (el.tagName === "SELECT" ? (c === "status" ? "PENDIENTE" : (c === "mes" ? mesActual : (c === "banco" || c === "banco2" || c === "banco3" || c === "banco_detracciones" ? "" : "NO"))) : ""));
         });
         modal.showModal();
     }
