@@ -19,7 +19,8 @@ $conexion->set_charset('utf8mb4');
 // Columnas de contacto: se crean si faltan (también en producción)
 foreach (['persona_contacto' => 120, 'correo' => 120, 'celular' => 20, 'pagina_web' => 200,
     'cobranza_persona' => 120, 'cobranza_correo' => 120, 'cobranza_celular' => 20,
-    'pagos_persona' => 120, 'pagos_correo' => 120, 'pagos_celular' => 20] as $col => $largo) {
+    'pagos_persona' => 120, 'pagos_correo' => 120, 'pagos_celular' => 20,
+    'moneda_cuenta' => 7, 'moneda_cuenta2' => 7, 'moneda_cuenta3' => 7, 'moneda_detracciones' => 7] as $col => $largo) {
     if ($conexion->query("SHOW COLUMNS FROM proveedores LIKE '$col'")->num_rows === 0) {
         $conexion->query("ALTER TABLE proveedores ADD COLUMN `$col` VARCHAR($largo) NOT NULL DEFAULT ''");
     }
@@ -29,6 +30,23 @@ if (empty($_SESSION['csrf'])) {
 }
 // Escapa texto para imprimirlo de forma segura en HTML
 function e($v) { return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
+
+function normalizarMonedas($seleccion, bool &$invalida): string
+{
+    if (!is_array($seleccion)) {
+        $invalida = true;
+        return '';
+    }
+    $valores = [];
+    foreach ($seleccion as $moneda) {
+        if (!is_string($moneda) || !in_array($moneda, ['USD', 'PEN'], true)) {
+            $invalida = true;
+        } else {
+            $valores[] = $moneda;
+        }
+    }
+    return implode(',', array_values(array_intersect(['USD', 'PEN'], $valores)));
+}
 
 // Listas de valores permitidos (también sirven para validar los POST)
 $MESES = ['', 'ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SET','OCT','NOV','DIC'];
@@ -71,6 +89,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $cci3 = trim($_POST['cci3'] ?? '');
             $bancoDetracciones = trim($_POST['banco_detracciones'] ?? '');
             $cuentaDetracciones = trim($_POST['cuenta_detracciones'] ?? '');
+            $monedasInvalidas = false;
+            $monedaCuenta = normalizarMonedas($_POST['monedas_cuenta'] ?? [], $monedasInvalidas);
+            $monedaCuenta2 = normalizarMonedas($_POST['monedas_cuenta2'] ?? [], $monedasInvalidas);
+            $monedaCuenta3 = normalizarMonedas($_POST['monedas_cuenta3'] ?? [], $monedasInvalidas);
+            $monedaDetracciones = normalizarMonedas($_POST['monedas_detracciones'] ?? [], $monedasInvalidas);
             $personaContacto = trim($_POST['persona_contacto'] ?? '');
             $correo = trim($_POST['correo'] ?? '');
             $celular = trim($_POST['celular'] ?? '');
@@ -122,22 +145,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 || ($banco3 !== '' && !in_array($banco3, $BANCOS, true)) || mb_strlen($numeroCuenta3) > 30 || ($cci3 !== '' && !preg_match('/^\d{20}$/', $cci3))
                 || ($bancoDetracciones !== '' && $bancoDetracciones !== $BANCO_DETRACCIONES)
                 || mb_strlen($cuentaDetracciones) > 30
-                || $contactoInvalido
+                || $contactoInvalido || $monedasInvalidas
                 || !in_array($mes, $MESES, true) || ($nuevo && $mes === '')
                 || !in_array($ac, $TRI, true) || !in_array($dj, $TRI, true)
                 || !in_array($fi, $TRI, true) || !in_array($stt, $STATUS, true)
                 || !in_array($reg, $SINO, true) || ($nuevo && $reg === '')) {
-                $err = 'Revisa los datos: razón social y tipo son obligatorios; selecciona un certificado válido, verifica el RUC, los bancos, el CCI, el correo, celular y página web.';
+                $err = 'Revisa los datos: razón social y tipo son obligatorios; selecciona un certificado válido, verifica el RUC, los bancos y monedas, el CCI, el correo, celular y página web.';
             } elseif ($nuevo) {
                 // INSERT de un proveedor nuevo (consulta preparada)
-                $s = $conexion->prepare("INSERT INTO proveedores (razon_social,ruc,tipo,certificado,banco,numero_cuenta,cci,banco2,numero_cuenta2,cci2,banco3,numero_cuenta3,cci3,                banco_detracciones,cuenta_detracciones,                persona_contacto,correo,celular,pagina_web,cobranza_persona,cobranza_correo,cobranza_celular,pagos_persona,pagos_correo,pagos_celular,mes,acuerdo_seguridad,ddjj,filtros_aplicados,status,registrado_sistema) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
-                                $s->bind_param(str_repeat('s', 31), $razon, $ruc, $tipo, $cert, $banco, $numeroCuenta, $cci, $banco2, $numeroCuenta2, $cci2, $banco3, $numeroCuenta3, $cci3, $bancoDetracciones, $cuentaDetracciones, $personaContacto, $correo, $celular, $paginaWeb, $cobranzaPersona, $cobranzaCorreo, $cobranzaCelular, $pagosPersona, $pagosCorreo, $pagosCelular, $mes, $ac, $dj, $fi, $stt, $reg);
+                $s = $conexion->prepare("INSERT INTO proveedores (razon_social,ruc,tipo,certificado,banco,numero_cuenta,cci,banco2,numero_cuenta2,cci2,banco3,numero_cuenta3,cci3,banco_detracciones,cuenta_detracciones,persona_contacto,correo,celular,pagina_web,cobranza_persona,cobranza_correo,cobranza_celular,pagos_persona,pagos_correo,pagos_celular,mes,acuerdo_seguridad,ddjj,filtros_aplicados,status,registrado_sistema,moneda_cuenta,moneda_cuenta2,moneda_cuenta3,moneda_detracciones) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+                $s->bind_param(str_repeat('s', 35), $razon, $ruc, $tipo, $cert, $banco, $numeroCuenta, $cci, $banco2, $numeroCuenta2, $cci2, $banco3, $numeroCuenta3, $cci3, $bancoDetracciones, $cuentaDetracciones, $personaContacto, $correo, $celular, $paginaWeb, $cobranzaPersona, $cobranzaCorreo, $cobranzaCelular, $pagosPersona, $pagosCorreo, $pagosCelular, $mes, $ac, $dj, $fi, $stt, $reg, $monedaCuenta, $monedaCuenta2, $monedaCuenta3, $monedaDetracciones);
                 $s->execute();
                 $ok = 'Proveedor agregado correctamente.';
             } else {
                 // UPDATE completo del proveedor existente
-                $s = $conexion->prepare("UPDATE proveedores SET razon_social=?,ruc=?,tipo=?,certificado=?,banco=?,numero_cuenta=?,cci=?,banco2=?,numero_cuenta2=?,cci2=?,banco3=?,numero_cuenta3=?,cci3=?,banco_detracciones=?,                cuenta_detracciones=?,persona_contacto=?,correo=?,celular=?,                pagina_web=?,cobranza_persona=?,cobranza_correo=?,cobranza_celular=?,pagos_persona=?,pagos_correo=?,pagos_celular=?,mes=?,acuerdo_seguridad=?,ddjj=?,filtros_aplicados=?,status=?,registrado_sistema=? WHERE id=?");
-                                $s->bind_param(str_repeat('s', 31) . 'i', $razon, $ruc, $tipo, $cert, $banco, $numeroCuenta, $cci, $banco2, $numeroCuenta2, $cci2, $banco3, $numeroCuenta3, $cci3, $bancoDetracciones, $cuentaDetracciones, $personaContacto, $correo, $celular, $paginaWeb, $cobranzaPersona, $cobranzaCorreo, $cobranzaCelular, $pagosPersona, $pagosCorreo, $pagosCelular, $mes, $ac, $dj, $fi, $stt, $reg, $id);
+                $s = $conexion->prepare("UPDATE proveedores SET razon_social=?,ruc=?,tipo=?,certificado=?,banco=?,numero_cuenta=?,cci=?,banco2=?,numero_cuenta2=?,cci2=?,banco3=?,numero_cuenta3=?,cci3=?,banco_detracciones=?,cuenta_detracciones=?,persona_contacto=?,correo=?,celular=?,pagina_web=?,cobranza_persona=?,cobranza_correo=?,cobranza_celular=?,pagos_persona=?,pagos_correo=?,pagos_celular=?,mes=?,acuerdo_seguridad=?,ddjj=?,filtros_aplicados=?,status=?,registrado_sistema=?,moneda_cuenta=?,moneda_cuenta2=?,moneda_cuenta3=?,moneda_detracciones=? WHERE id=?");
+                $s->bind_param(str_repeat('s', 35) . 'i', $razon, $ruc, $tipo, $cert, $banco, $numeroCuenta, $cci, $banco2, $numeroCuenta2, $cci2, $banco3, $numeroCuenta3, $cci3, $bancoDetracciones, $cuentaDetracciones, $personaContacto, $correo, $celular, $paginaWeb, $cobranzaPersona, $cobranzaCorreo, $cobranzaCelular, $pagosPersona, $pagosCorreo, $pagosCelular, $mes, $ac, $dj, $fi, $stt, $reg, $monedaCuenta, $monedaCuenta2, $monedaCuenta3, $monedaDetracciones, $id);
                 $s->execute();
                 $ok = 'Proveedor actualizado correctamente.';
             }
@@ -436,6 +459,10 @@ require __DIR__ . '/layout_inicio.php';
                 <div class="form-prov-grid">
                     <div class="form-grupo"><label for="f_banco_detracciones">Banco de la Nación</label><select name="banco_detracciones" id="f_banco_detracciones"><option value="">— Seleccionar —</option><option value="<?= e($BANCO_DETRACCIONES) ?>"><?= e($BANCO_DETRACCIONES) ?></option></select></div>
                     <div class="form-grupo"><label for="f_cuenta_detracciones">Número de cuenta de detracciones</label><input type="text" name="cuenta_detracciones" id="f_cuenta_detracciones" maxlength="30"></div>
+                    <div class="form-grupo form-moneda" role="group" aria-label="Moneda de la cuenta de detracciones">
+                        <label><input type="checkbox" name="monedas_detracciones[]" value="USD" id="f_monedas_detracciones_usd"> $ Dólares</label>
+                        <label><input type="checkbox" name="monedas_detracciones[]" value="PEN" id="f_monedas_detracciones_pen"> S/. Soles</label>
+                    </div>
                 </div>
             </section>
             </div>
@@ -447,14 +474,26 @@ require __DIR__ . '/layout_inicio.php';
                     <div class="form-grupo form-prov-ancho"><label for="f_banco">Banco</label><select name="banco" id="f_banco"><option value="">— Seleccionar —</option><?php opciones($BANCOS); ?></select></div>
                     <div class="form-grupo"><label for="f_numero_cuenta">Número de cuenta</label><input type="text" name="numero_cuenta" id="f_numero_cuenta" maxlength="30"></div>
                     <div class="form-grupo"><label for="f_cci">CCI</label><input type="text" name="cci" id="f_cci" inputmode="numeric" pattern="\d{20}" maxlength="20" title="20 dígitos"></div>
+                    <div class="form-grupo form-moneda" role="group" aria-label="Moneda de la cuenta principal">
+                        <label><input type="checkbox" name="monedas_cuenta[]" value="USD" id="f_monedas_cuenta_usd"> $ Dólares</label>
+                        <label><input type="checkbox" name="monedas_cuenta[]" value="PEN" id="f_monedas_cuenta_pen"> S/. Soles</label>
+                    </div>
                     <h4 class="form-prov-subtitulo">Banco adicional 1</h4>
                     <div class="form-grupo form-prov-ancho"><label for="f_banco2">Banco</label><select name="banco2" id="f_banco2"><option value="">— Seleccionar —</option><?php opciones($BANCOS); ?></select></div>
                     <div class="form-grupo"><label for="f_numero_cuenta2">Número de cuenta</label><input type="text" name="numero_cuenta2" id="f_numero_cuenta2" maxlength="30"></div>
                     <div class="form-grupo"><label for="f_cci2">CCI</label><input type="text" name="cci2" id="f_cci2" inputmode="numeric" pattern="\d{20}" maxlength="20" title="20 dígitos"></div>
+                    <div class="form-grupo form-moneda" role="group" aria-label="Moneda de la cuenta adicional 1">
+                        <label><input type="checkbox" name="monedas_cuenta2[]" value="USD" id="f_monedas_cuenta2_usd"> $ Dólares</label>
+                        <label><input type="checkbox" name="monedas_cuenta2[]" value="PEN" id="f_monedas_cuenta2_pen"> S/. Soles</label>
+                    </div>
                     <h4 class="form-prov-subtitulo">Banco adicional 2</h4>
                     <div class="form-grupo form-prov-ancho"><label for="f_banco3">Banco</label><select name="banco3" id="f_banco3"><option value="">— Seleccionar —</option><?php opciones($BANCOS); ?></select></div>
                     <div class="form-grupo"><label for="f_numero_cuenta3">Número de cuenta</label><input type="text" name="numero_cuenta3" id="f_numero_cuenta3" maxlength="30"></div>
                     <div class="form-grupo"><label for="f_cci3">CCI</label><input type="text" name="cci3" id="f_cci3" inputmode="numeric" pattern="\d{20}" maxlength="20" title="20 dígitos"></div>
+                    <div class="form-grupo form-moneda" role="group" aria-label="Moneda de la cuenta adicional 2">
+                        <label><input type="checkbox" name="monedas_cuenta3[]" value="USD" id="f_monedas_cuenta3_usd"> $ Dólares</label>
+                        <label><input type="checkbox" name="monedas_cuenta3[]" value="PEN" id="f_monedas_cuenta3_pen"> S/. Soles</label>
+                    </div>
                 </div>
             </section>
             <section class="form-prov-seccion">
@@ -481,6 +520,12 @@ require __DIR__ . '/layout_inicio.php';
     const modal = document.getElementById("modal-prov");
     const mesActual = <?= json_encode($MESES[(int)date('n')], JSON_UNESCAPED_UNICODE) ?>;
     const campos = ["razon_social","ruc","tipo","certificado","banco","numero_cuenta","cci","banco2","numero_cuenta2","cci2","banco3","numero_cuenta3","cci3","banco_detracciones","cuenta_detracciones","persona_contacto","correo","celular","pagina_web","cobranza_persona","cobranza_correo","cobranza_celular","pagos_persona","pagos_correo","pagos_celular","mes","acuerdo_seguridad","ddjj","filtros_aplicados","status","registrado_sistema"];
+    const camposMoneda = {
+        moneda_cuenta: "monedas_cuenta",
+        moneda_cuenta2: "monedas_cuenta2",
+        moneda_cuenta3: "monedas_cuenta3",
+        moneda_detracciones: "monedas_detracciones",
+    };
     function abrir(p) {
         document.getElementById("m_titulo").textContent = p ? "Editar proveedor" : "Agregar proveedor";
         document.getElementById("f_id").value = p ? p.id : 0;
@@ -497,6 +542,12 @@ require __DIR__ . '/layout_inicio.php';
         campos.forEach((c) => {
             const el = document.getElementById("f_" + c);
             el.value = p ? p[c] : (c === "tipo" ? "TRANSPORTE" : (el.tagName === "SELECT" ? (c === "status" ? "PENDIENTE" : (c === "mes" ? mesActual : (c === "banco" || c === "banco2" || c === "banco3" || c === "banco_detracciones" ? "" : "NO"))) : ""));
+        });
+        Object.entries(camposMoneda).forEach(([campo, grupo]) => {
+            const seleccionadas = p ? (p[campo] || "").split(",") : [];
+            ["USD", "PEN"].forEach((moneda) => {
+                document.getElementById("f_" + grupo + "_" + moneda.toLowerCase()).checked = seleccionadas.includes(moneda);
+            });
         });
         modal.showModal();
     }
@@ -569,8 +620,12 @@ require __DIR__ . '/layout_inicio.php';
                 ["Banco 3", "banco3"],
                 ["Número de cuenta 3", "numero_cuenta3"],
                 ["CCI 3", "cci3"],
+                ["Monedas de la cuenta principal", "moneda_cuenta"],
+                ["Monedas de la cuenta adicional 1", "moneda_cuenta2"],
+                ["Monedas de la cuenta adicional 2", "moneda_cuenta3"],
                 ["Banco de detracciones", "banco_detracciones"],
                 ["Cuenta de detracciones", "cuenta_detracciones"],
+                ["Monedas de la cuenta de detracciones", "moneda_detracciones"],
             ],
         },
         {
@@ -614,6 +669,9 @@ require __DIR__ . '/layout_inicio.php';
                     titulo.textContent = etiqueta;
                     const valor = document.createElement("dd");
                     let texto = proveedor[campo] || "Sin registrar";
+                    if (campo.startsWith("moneda_") && proveedor[campo]) {
+                        texto = proveedor[campo].split(",").map((moneda) => moneda === "USD" ? "$ Dólares" : "S/. Soles").join(" · ");
+                    }
                     if (["creado", "actualizado"].includes(campo) && proveedor[campo]) {
                         const fecha = proveedor[campo].match(/^(\d{4})-(\d{2})-(\d{2})(?:\s+(\d{2}):(\d{2})(?::\d{2})?)?$/);
                         if (fecha) {
