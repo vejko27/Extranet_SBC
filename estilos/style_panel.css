@@ -62,6 +62,16 @@ html.sidebar-colapsado .sidebar .grupo-toggle::before { content: attr(data-short
 .pdf-reader-status { color: #333; text-align: center; }
 .pdf-reader-page { width: min(100%, 900px); margin: 0; background: #fff; box-shadow: 0 2px 8px rgba(0, 0, 0, .2); overflow: hidden; }
 .pdf-reader-page canvas { display: block; width: 100%; height: auto; }
+.manuales-buscar label { display: block; margin-bottom: 8px; font-size: 14px; font-weight: 600; color: #334155; }
+.manuales-buscar-controles { display: flex; flex-wrap: wrap; gap: 12px; }
+.manuales-buscar-controles input { flex: 1 1 240px; min-width: 0; }
+.manuales-lista { display: grid; gap: 12px; }
+.manuales-item { padding: 16px; border: 1px solid #e2e8f0; border-radius: 8px; overflow-wrap: anywhere; }
+.manuales-item[hidden], #manuales-sin-resultados[hidden] { display: none; }
+.manuales-item h3 { font-size: 16px; margin-bottom: 6px; }
+.manuales-item a, .manuales-volver a { color: #006d88; }
+.manuales-item p { color: #64748b; font-size: 14px; }
+.manuales-volver { margin-bottom: 16px; }
 .sidebar a.salir:hover { background: #7f1d1d; color: #fff; }
 
 .contenido { flex: 1; padding: 32px; min-width: 0; }

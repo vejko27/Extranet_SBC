@@ -12,7 +12,7 @@ $veProveedores = puede('Proveedores', 'ver');
 $veRRHH = puede('Recursos Humanos', 'ver');
 // Lista de manuales y manual activo (solo en la página de manuales)
 $manuales = require __DIR__ . '/manuales_lista.php';
-$manualActivo = $paginaActiva === 'manuales' ? (string)($_GET['m'] ?? array_key_first($manuales)) : null;
+$manualActivo = $paginaActiva === 'manuales' && isset($_GET['m']) && is_string($_GET['m']) ? $_GET['m'] : null;
 ?>
 <?php /* Cabecera HTML y hojas de estilo */ ?>
 <!DOCTYPE html>
