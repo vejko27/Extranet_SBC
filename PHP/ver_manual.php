@@ -29,7 +29,9 @@ if (!is_file($ruta)) {
 // Libera la sesión y envía el PDF con sus cabeceras
 session_write_close();
 header('Content-Type: application/pdf');
-header('Content-Disposition: inline; filename="' . $clave . '.pdf"');
+$descargar = $esFormatos && isset($_GET['descargar']) && $_GET['descargar'] === '1';
+header('Content-Disposition: ' . ($descargar ? 'attachment; filename="formato-' . (int)$clave . '.pdf"' : 'inline; filename="' . $clave . '.pdf"'));
 header('Content-Length: ' . filesize($ruta));
 header('X-Content-Type-Options: nosniff');
+header('Cache-Control: private, no-store');
 readfile($ruta);

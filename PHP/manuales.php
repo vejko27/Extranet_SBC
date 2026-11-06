@@ -21,7 +21,7 @@ if (!isset($_GET['m'])):
     $buscar = isset($_GET['q']) && is_string($_GET['q']) ? trim($_GET['q']) : '';
     $coincidencias = 0;
 ?>
-<div class="cabecera-marca">
+<div class="cabecera-marca manuales-cabecera">
     <img class="logo-marca" src="../logo/SBC_TRANSPORT.jpg" alt="SMART Transporte de Carga Pesada">
     <div>
         <h1><?= $esFormatos ? 'Formatos de Procedimientos internos' : 'Manuales' ?></h1>
@@ -52,9 +52,19 @@ if (!isset($_GET['m'])):
                     || mb_stripos($descripcionManual, $buscar, 0, 'UTF-8') !== false;
                 if ($visible) $coincidencias++;
             ?>
-                <article class="manuales-item"<?= $visible ? '' : ' hidden' ?>>
-                    <h3><a href="<?= $urlCatalogo ?>?m=<?= urlencode($id) ?>"><?= htmlspecialchars($tituloManual, ENT_QUOTES, 'UTF-8') ?></a></h3>
-                    <p><?= htmlspecialchars($descripcionManual, ENT_QUOTES, 'UTF-8') ?></p>
+                <article class="manuales-item<?= $esFormatos ? ' manuales-item-formato' : '' ?>"<?= $visible ? '' : ' hidden' ?>>
+                    <div>
+                        <?php if ($esFormatos): ?><span class="manuales-campo-titulo">Nombre de Formato</span><?php endif; ?>
+                        <h3><a href="<?= $urlCatalogo ?>?m=<?= urlencode($id) ?>"><?= htmlspecialchars($tituloManual, ENT_QUOTES, 'UTF-8') ?></a></h3>
+                        <?php if (!$esFormatos): ?><p><?= htmlspecialchars($descripcionManual, ENT_QUOTES, 'UTF-8') ?></p><?php endif; ?>
+                    </div>
+                    <?php if ($esFormatos): ?>
+                        <div>
+                            <span class="manuales-campo-titulo">Descripción</span>
+                            <p><?= htmlspecialchars($descripcionManual, ENT_QUOTES, 'UTF-8') ?></p>
+                        </div>
+                        <a class="btn manuales-descargar" href="<?= htmlspecialchars($urlPdf, ENT_QUOTES, 'UTF-8') ?>?f=<?= urlencode($id) ?>&amp;descargar=1" aria-label="Descargar PDF: <?= htmlspecialchars($tituloManual, ENT_QUOTES, 'UTF-8') ?>">Descargar PDF</a>
+                    <?php endif; ?>
                 </article>
             <?php endforeach; ?>
         </div>

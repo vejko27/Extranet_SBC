@@ -107,7 +107,7 @@ $formatoActivo = $paginaActiva === 'formatos_procedimientos' && isset($_GET['m']
             <?php endif; ?>
             <?php if ($veFormatos): ?>
                 <button type="button" class="grupo-titulo grupo-toggle" id="toggle-formatos" data-short="F" title="Formatos de Procedimientos internos" aria-expanded="true" aria-controls="submenu-formatos">
-                    <span class="grupo-nombre">Formatos de Procedimientos internos</span><span class="flecha" aria-hidden="true">▾</span>
+                    <span class="grupo-nombre">Formatos de Procedimientos Internos</span><span class="flecha" aria-hidden="true">▾</span>
                 </button>
                 <div class="submenu" id="submenu-formatos">
                 <?php foreach ($formatos as $clave => [$t, $d]): ?>
