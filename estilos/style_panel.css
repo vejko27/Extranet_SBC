@@ -216,6 +216,10 @@ dialog { max-height: 92vh; overflow-y: auto; }
 .tabla-scroll { overflow-x: auto; }
 .tabla-prov { min-width: 1250px; }
 @media (max-width: 800px) { .tabla-prov { min-width: 0; } }
+@media screen and (min-width: 801px) {
+    .tabla-scroll-proveedores { max-height: var(--altura-tabla-proveedores, none); overflow: auto; }
+    .tabla-scroll-proveedores .tabla-prov th { position: sticky; top: 0; z-index: 1; }
+}
 .prov-barra { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
 .prov-anio { display: flex; align-items: center; gap: 8px; font-weight: 600; color: #475569; }
 .prov-import { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 14px 18px; }
@@ -235,6 +239,7 @@ dialog { max-height: 92vh; overflow-y: auto; }
     .layout { display: block; }
     .contenido { padding: 0; }
     .card { box-shadow: none; border: 1px solid #cbd5e1; break-inside: avoid; }
+    .tabla-scroll-proveedores { overflow: visible; }
 }
 @media (max-width: 800px) { .prov-import input, .prov-import button { width: 100%; } }
 .tabla-prov th { background: #006d88; color: #fff; text-align: center; font-size: 12px; }

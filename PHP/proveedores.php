@@ -355,7 +355,7 @@ require __DIR__ . '/layout_inicio.php';
 
 <?php /* Tabla de proveedores: encabezados, mensaje de vacío y una fila por proveedor */ ?>
 <div class="card">
-<div class="tabla-scroll" id="scroll-tabla">
+<div class="tabla-scroll tabla-scroll-proveedores" id="scroll-tabla" role="region" aria-label="Listado de proveedores" tabindex="0">
     <table class="tabla-prov">
         <tr>
             <th>N°</th><th>Razón social</th><th>RUC</th><th>Tipo</th><th>Certificado</th><th>Mes</th>
@@ -402,6 +402,47 @@ require __DIR__ . '/layout_inicio.php';
     </table>
 </div>
 </div>
+
+<script>
+    (() => {
+        const contenedor = document.getElementById("scroll-tabla");
+        const tabla = contenedor.querySelector(".tabla-prov");
+        const cabecera = tabla.querySelector("tr");
+        const filas = Array.from(tabla.querySelectorAll("tr"))
+            .filter((fila) => fila.querySelector("td[data-label='RUC']"));
+
+        const actualizarAltura = () => {
+            if (!window.matchMedia("(min-width: 801px)").matches) {
+                contenedor.style.removeProperty("--altura-tabla-proveedores");
+                return;
+            }
+            const alturas = filas.filter((fila) => !fila.hidden)
+                .map((fila) => fila.getBoundingClientRect().height);
+            if (alturas.length <= 12) {
+                contenedor.style.removeProperty("--altura-tabla-proveedores");
+                return;
+            }
+            // Una fila adicional permite ver 11 completas incluso durante el desplazamiento.
+            let suma = alturas.slice(0, 12).reduce((total, altura) => total + altura, 0);
+            let mayor = suma;
+            for (let i = 12; i < alturas.length; i++) {
+                suma += alturas[i] - alturas[i - 12];
+                mayor = Math.max(mayor, suma);
+            }
+            const altura = Math.ceil(cabecera.getBoundingClientRect().height + mayor + 20);
+            contenedor.style.setProperty("--altura-tabla-proveedores", altura + "px");
+        };
+        window.addEventListener("resize", actualizarAltura);
+        const observador = new MutationObserver(actualizarAltura);
+        filas.forEach((fila) => observador.observe(fila, { attributes: true, attributeFilter: ["hidden"] }));
+        if (window.ResizeObserver) {
+            const observadorTamano = new ResizeObserver(actualizarAltura);
+            observadorTamano.observe(tabla);
+            filas.forEach((fila) => observadorTamano.observe(fila));
+        }
+        actualizarAltura();
+    })();
+</script>
 
 <?php /* Modal de alta/edición (solo con permiso de crear o editar) */ ?>
 <?php if ($puedeCrear || $puedeEditar): ?>
