@@ -1,14 +1,19 @@
 <?php
 // Administración de manuales PDF: subir, editar y eliminar según los permisos del usuario.
-$paginaActiva = 'admin_manuales';
-$tituloPagina = 'Administrar manuales';
+$esFormatos = defined('MODULO_FORMATOS') && MODULO_FORMATOS;
+$paginaActiva = $esFormatos ? 'admin_formatos_procedimientos' : 'admin_manuales';
+$tituloPagina = $esFormatos ? 'Administrar formatos de procedimientos internos' : 'Administrar manuales';
+$modulo = $esFormatos ? 'Formatos de Procedimientos internos' : 'Manuales';
+$tablaDocumentos = $esFormatos ? 'formatos_procedimientos_internos' : 'manuales';
+$urlAdmin = $esFormatos ? 'admin_formatos_procedimientos.php' : 'admin_manuales.php';
+$documento = $esFormatos ? 'formato' : 'manual';
 require_once __DIR__ . '/auth.php';
 require __DIR__ . '/bd_conexion.php';
 
 // Permisos del usuario sobre el módulo Manuales; sin ninguno, acceso denegado
-$puedeCrear = puede('Manuales', 'crear');
-$puedeEditar = puede('Manuales', 'editar');
-$puedeEliminar = puede('Manuales', 'eliminar');
+$puedeCrear = puede($modulo, 'crear');
+$puedeEditar = puede($modulo, 'editar');
+$puedeEliminar = puede($modulo, 'eliminar');
 if (!$puedeCrear && !$puedeEditar && !$puedeEliminar) {
     http_response_code(403);
     exit('Acceso denegado');
@@ -22,7 +27,7 @@ if (empty($_SESSION['csrf'])) {
 function e($v) { return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
 
 // Carpeta de almacenamiento de los PDF
-$dir = dirname(__DIR__) . '/Manuales/';
+$dir = dirname(__DIR__) . ($esFormatos ? '/Formatos_Procedimientos_Internos/' : '/Manuales/');
 $ok = $err = '';
 
 // Procesamiento POST: valida CSRF y permiso por acción (subir/editar/eliminar)
@@ -57,10 +62,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $archivo = bin2hex(random_bytes(8)) . '.pdf';
             if (move_uploaded_file($f['tmp_name'], $dir . $archivo)) {
-                $st = $conexion->prepare("INSERT INTO manuales (titulo, descripcion, archivo) VALUES (?,?,?)");
+                $st = $conexion->prepare("INSERT INTO $tablaDocumentos (titulo, descripcion, archivo) VALUES (?,?,?)");
                 $st->bind_param('sss', $titulo, $desc, $archivo);
                 $st->execute();
-                $ok = 'Manual agregado correctamente.';
+                $ok = ucfirst($documento) . ' agregado correctamente.';
             } else {
                 $err = 'No se pudo guardar el archivo.';
             }
@@ -68,18 +73,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif (($_POST['accion'] ?? '') === 'eliminar') {
         // Eliminar: borra el registro y, si corresponde, el archivo físico
         $id = (int)($_POST['id'] ?? 0);
-        $st = $conexion->prepare("SELECT archivo FROM manuales WHERE id = ?");
+        $st = $conexion->prepare("SELECT archivo FROM $tablaDocumentos WHERE id = ?");
         $st->bind_param('i', $id);
         $st->execute();
         if ($fila = $st->get_result()->fetch_assoc()) {
-            $del = $conexion->prepare("DELETE FROM manuales WHERE id = ?");
+            $del = $conexion->prepare("DELETE FROM $tablaDocumentos WHERE id = ?");
             $del->bind_param('i', $id);
             $del->execute();
             // Solo se borran los PDF subidos desde esta consola
             if (preg_match('/^[a-f0-9]{16}\.pdf$/', $fila['archivo'])) {
                 @unlink($dir . $fila['archivo']);
             }
-            $ok = 'Manual eliminado.';
+            $ok = ucfirst($documento) . ' eliminado.';
         }
     } elseif (($_POST['accion'] ?? '') === 'editar') {
         // Editar: actualiza título y descripción del manual
@@ -89,16 +94,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($titulo === '' || $id <= 0) {
             $err = 'El título no puede estar vacío.';
         } else {
-            $st = $conexion->prepare("UPDATE manuales SET titulo = ?, descripcion = ? WHERE id = ?");
+            $st = $conexion->prepare("UPDATE $tablaDocumentos SET titulo = ?, descripcion = ? WHERE id = ?");
             $st->bind_param('ssi', $titulo, $desc, $id);
             $st->execute();
-            $ok = 'Manual actualizado correctamente.';
+            $ok = ucfirst($documento) . ' actualizado correctamente.';
         }
     }
 
     // Post/Redirect/Get: evita reenviar el formulario al refrescar
     $_SESSION['flash'] = ['ok' => $ok, 'err' => $err];
-    header('Location: admin_manuales.php');
+    header('Location: ' . $urlAdmin);
     exit;
 }
 
@@ -109,14 +114,15 @@ $ok = $flash['ok'];
 $err = $flash['err'];
 
 require __DIR__ . '/layout_inicio.php';
-$lista = $conexion->query("SELECT id, titulo, descripcion, archivo FROM manuales ORDER BY id")->fetch_all(MYSQLI_ASSOC);
+$tablaDocumentos = $esFormatos ? 'formatos_procedimientos_internos' : 'manuales';
+$lista = $conexion->query("SELECT id, titulo, descripcion, archivo FROM $tablaDocumentos ORDER BY id")->fetch_all(MYSQLI_ASSOC);
 ?>
 
 <div class="cabecera-marca">
     <img class="logo-marca" src="../logo/SBC_TRANSPORT.jpg" alt="SMART Transporte de Carga Pesada">
     <div>
-        <h1>Administrar manuales</h1>
-        <p class="subtitulo">Sube, edita o elimina los manuales en PDF según tus permisos.</p>
+        <h1><?= e($tituloPagina) ?></h1>
+        <p class="subtitulo">Sube, edita o elimina los <?= $esFormatos ? 'formatos' : 'manuales' ?> en PDF según tus permisos.</p>
     </div>
 </div>
 
@@ -131,7 +137,7 @@ $lista = $conexion->query("SELECT id, titulo, descripcion, archivo FROM manuales
         <input type="hidden" name="csrf" value="<?= e($_SESSION['csrf']) ?>">
         <input type="hidden" name="accion" value="subir">
         <div class="form-grupo">
-            <label>Título del manual</label>
+            <label>Título del <?= $documento ?></label>
             <input type="text" name="titulo" maxlength="200" required>
         </div>
         <div class="form-grupo">
@@ -142,7 +148,7 @@ $lista = $conexion->query("SELECT id, titulo, descripcion, archivo FROM manuales
             <label>Archivo PDF</label>
             <input type="file" name="pdf" accept="application/pdf,.pdf" required>
         </div>
-        <button type="submit">Subir manual</button>
+        <button type="submit">Subir <?= $documento ?></button>
     </form>
 </div>
 <?php endif; ?>
@@ -162,7 +168,7 @@ $lista = $conexion->query("SELECT id, titulo, descripcion, archivo FROM manuales
                             data-descripcion="<?= e($m['descripcion']) ?>">Editar</button>
                     <?php endif; ?>
                     <?php if ($puedeEliminar): ?>
-                    <form method="POST" class="form-inline" onsubmit="return confirm('¿Eliminar este manual?');">
+                    <form method="POST" class="form-inline" onsubmit="return confirm('¿Eliminar este <?= $documento ?>?');">
                         <input type="hidden" name="csrf" value="<?= e($_SESSION['csrf']) ?>">
                         <input type="hidden" name="accion" value="eliminar">
                         <input type="hidden" name="id" value="<?= (int)$m['id'] ?>">
@@ -177,13 +183,13 @@ $lista = $conexion->query("SELECT id, titulo, descripcion, archivo FROM manuales
 
 <!-- Ventana modal para editar título y descripción -->
 <dialog id="modal-editar">
-    <h2>Editar manual</h2>
+    <h2>Editar <?= $documento ?></h2>
     <form method="POST">
         <input type="hidden" name="csrf" value="<?= e($_SESSION['csrf']) ?>">
         <input type="hidden" name="accion" value="editar">
         <input type="hidden" name="id" id="e_id">
         <div class="form-grupo">
-            <label>Título del manual</label>
+            <label>Título del <?= $documento ?></label>
             <input type="text" name="titulo" id="e_titulo" maxlength="200" required>
         </div>
         <div class="form-grupo">

@@ -4,3 +4,5 @@ contraseña.txt
 error_log
 /Documentos_Personal/*
 !/Documentos_Personal/.htaccess
+/Formatos_Procedimientos_Internos/*
+!/Formatos_Procedimientos_Internos/.htaccess

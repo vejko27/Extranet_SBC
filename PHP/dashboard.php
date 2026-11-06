@@ -12,6 +12,8 @@ if ($creaUsuarios)  $tarjetas[] = ['registrar.php', 'Registrar usuario', 'Formul
 if ($esAdmin)       $tarjetas[] = ['permisos.php', 'Permisos', 'Gestión de permisos por módulo.'];
 if ($adminManuales) $tarjetas[] = ['admin_manuales.php', 'Administrar manuales', 'Sube, edita o elimina manuales en PDF.'];
 if ($veManuales)    $tarjetas[] = ['manuales.php', 'Manuales', 'Consulta los manuales en PDF.'];
+if ($adminFormatos) $tarjetas[] = ['admin_formatos_procedimientos.php', 'Administrar formatos de procedimientos internos', 'Sube, edita o elimina formatos en PDF.'];
+if ($veFormatos)    $tarjetas[] = ['formatos_procedimientos.php', 'Formatos de Procedimientos internos', 'Consulta los formatos en PDF.'];
 if ($veProveedores) $tarjetas[] = ['proveedores.php', 'Proveedores', 'Listado de proveedores homologados.'];
 if ($veRRHH)        $tarjetas[] = ['rrhh.php', 'Recursos Humanos', 'Fichas de datos del personal.'];
 ?>

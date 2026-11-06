@@ -8,11 +8,21 @@ $veUsuarios = puede('Usuarios y roles', 'ver');
 $creaUsuarios = puede('Usuarios y roles', 'crear');
 $veManuales = puede('Manuales', 'ver');
 $adminManuales = puede('Manuales', 'crear') || puede('Manuales', 'editar') || puede('Manuales', 'eliminar');
+$veFormatos = puede('Formatos de Procedimientos internos', 'ver');
+$adminFormatos = puede('Formatos de Procedimientos internos', 'crear') || puede('Formatos de Procedimientos internos', 'editar') || puede('Formatos de Procedimientos internos', 'eliminar');
 $veProveedores = puede('Proveedores', 'ver');
 $veRRHH = puede('Recursos Humanos', 'ver');
 // Lista de manuales y manual activo (solo en la página de manuales)
+$listarFormatos = false;
 $manuales = require __DIR__ . '/manuales_lista.php';
+$formatos = [];
+if ($veFormatos) {
+    $listarFormatos = true;
+    $formatos = require __DIR__ . '/manuales_lista.php';
+}
+$listarFormatos = false;
 $manualActivo = $paginaActiva === 'manuales' && isset($_GET['m']) && is_string($_GET['m']) ? $_GET['m'] : null;
+$formatoActivo = $paginaActiva === 'formatos_procedimientos' && isset($_GET['m']) && is_string($_GET['m']) ? $_GET['m'] : null;
 ?>
 <?php /* Cabecera HTML y hojas de estilo */ ?>
 <!DOCTYPE html>
@@ -54,6 +64,9 @@ $manualActivo = $paginaActiva === 'manuales' && isset($_GET['m']) && is_string($
             <?php if ($adminManuales): ?>
                 <a href="admin_manuales.php" data-short="A" title="Administrar manuales" class="<?= $paginaActiva === 'admin_manuales' ? 'activo' : '' ?>">Administrar manuales</a>
             <?php endif; ?>
+            <?php if ($adminFormatos): ?>
+                <a href="admin_formatos_procedimientos.php" data-short="AF" title="Administrar formatos de procedimientos internos" class="<?= $paginaActiva === 'admin_formatos_procedimientos' ? 'activo' : '' ?>">Administrar formatos de procedimientos internos</a>
+            <?php endif; ?>
             <?php if ($veProveedores): ?>
                 <a href="proveedores.php" data-short="P" title="Proveedores" class="<?= $paginaActiva === 'proveedores' ? 'activo' : '' ?>">Proveedores</a>
             <?php endif; ?>
@@ -72,6 +85,7 @@ $manualActivo = $paginaActiva === 'manuales' && isset($_GET['m']) && is_string($
                        title="<?= htmlspecialchars($t) ?>"
                        data-title="<?= htmlspecialchars($t) ?>"
                        data-description="<?= htmlspecialchars($d) ?>"
+                       data-modulo="manuales"
                        data-pdf="ver_manual.php?f=<?= urlencode($clave) ?>"><?= htmlspecialchars($t) ?></a>
                 <?php endforeach; ?>
                 </div>
@@ -86,6 +100,35 @@ $manualActivo = $paginaActiva === 'manuales' && isset($_GET['m']) && is_string($
                     }
                     // Restaura el estado guardado (abierto por defecto)
                     var g = null; try { g = localStorage.getItem('menuManuales'); } catch (e) {}
+                    set(g !== '0');
+                    b.addEventListener('click', function () { set(b.getAttribute('aria-expanded') !== 'true'); });
+                })();
+                </script>
+            <?php endif; ?>
+            <?php if ($veFormatos): ?>
+                <button type="button" class="grupo-titulo grupo-toggle" id="toggle-formatos" data-short="F" title="Formatos de Procedimientos internos" aria-expanded="true" aria-controls="submenu-formatos">
+                    <span class="grupo-nombre">Formatos de Procedimientos internos</span><span class="flecha" aria-hidden="true">▾</span>
+                </button>
+                <div class="submenu" id="submenu-formatos">
+                <?php foreach ($formatos as $clave => [$t, $d]): ?>
+                    <a href="formatos_procedimientos.php?m=<?= urlencode($clave) ?>"
+                       class="sub<?= $formatoActivo === (string)$clave ? ' activo' : '' ?>"
+                       title="<?= htmlspecialchars($t) ?>"
+                       data-title="<?= htmlspecialchars($t) ?>"
+                       data-description="<?= htmlspecialchars($d) ?>"
+                       data-modulo="formatos"
+                       data-pdf="ver_formato_procedimiento.php?f=<?= urlencode($clave) ?>"><?= htmlspecialchars($t) ?></a>
+                <?php endforeach; ?>
+                </div>
+                <script>
+                (function () {
+                    var b = document.getElementById('toggle-formatos'), s = document.getElementById('submenu-formatos');
+                    function set(abierto) {
+                        b.setAttribute('aria-expanded', abierto);
+                        s.hidden = !abierto;
+                        try { localStorage.setItem('menuFormatosProcedimientos', abierto ? '1' : '0'); } catch (e) {}
+                    }
+                    var g = null; try { g = localStorage.getItem('menuFormatosProcedimientos'); } catch (e) {}
                     set(g !== '0');
                     b.addEventListener('click', function () { set(b.getAttribute('aria-expanded') !== 'true'); });
                 })();

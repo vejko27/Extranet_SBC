@@ -1,10 +1,20 @@
 <?php
 // Catálogo y visor de manuales PDF.
-$paginaActiva = 'manuales';
-$tituloPagina = 'Manuales SBC Transport';
+$esFormatos = defined('MODULO_FORMATOS') && MODULO_FORMATOS;
+$paginaActiva = $esFormatos ? 'formatos_procedimientos' : 'manuales';
+$tituloPagina = $esFormatos ? 'Formatos de Procedimientos internos' : 'Manuales SBC Transport';
+$urlCatalogo = $esFormatos ? 'formatos_procedimientos.php' : 'manuales.php';
+$urlPdf = $esFormatos ? 'ver_formato_procedimiento.php' : 'ver_manual.php';
+$nombrePlural = $esFormatos ? 'formatos' : 'procedimientos';
 // Exige permiso de ver manuales y carga el layout (define $manuales)
-require __DIR__ . '/auth_manuales.php';
+if ($esFormatos) {
+    require_once __DIR__ . '/auth.php';
+    exigirPermiso('Formatos de Procedimientos internos', 'ver');
+} else {
+    require __DIR__ . '/auth_manuales.php';
+}
 require __DIR__ . '/layout_inicio.php';
+if ($esFormatos) $manuales = $formatos;
 
 // Sin un manual seleccionado, mostrar el catálogo antes de abrir un PDF.
 if (!isset($_GET['m'])):
@@ -14,14 +24,14 @@ if (!isset($_GET['m'])):
 <div class="cabecera-marca">
     <img class="logo-marca" src="../logo/SBC_TRANSPORT.jpg" alt="SMART Transporte de Carga Pesada">
     <div>
-        <h1>Manuales</h1>
-        <p class="subtitulo">Busca y consulta los procedimientos disponibles en PDF.</p>
+        <h1><?= $esFormatos ? 'Formatos de Procedimientos internos' : 'Manuales' ?></h1>
+        <p class="subtitulo">Busca y consulta los <?= $nombrePlural ?> disponibles en PDF.</p>
     </div>
 </div>
 
 <div class="card">
     <form method="get" class="manuales-buscar" role="search">
-        <label for="buscar-procedimientos">Buscar procedimientos por título o descripción</label>
+        <label for="buscar-procedimientos">Buscar <?= $nombrePlural ?> por título o descripción</label>
         <div class="manuales-buscar-controles">
             <input id="buscar-procedimientos" type="search" name="q" value="<?= htmlspecialchars($buscar, ENT_QUOTES, 'UTF-8') ?>" placeholder="Escribe un título o una descripción">
             <button type="submit">Buscar</button>
@@ -30,9 +40,9 @@ if (!isset($_GET['m'])):
 </div>
 
 <section class="card" aria-labelledby="procedimientos-titulo">
-    <h2 id="procedimientos-titulo">Procedimientos disponibles</h2>
+    <h2 id="procedimientos-titulo"><?= $esFormatos ? 'Formatos disponibles' : 'Procedimientos disponibles' ?></h2>
     <?php if (!$manuales): ?>
-        <p>Aún no hay procedimientos disponibles.</p>
+        <p>Aún no hay <?= $nombrePlural ?> disponibles.</p>
     <?php else: ?>
         <div class="manuales-lista">
             <?php foreach ($manuales as $id => [$tituloManual, $descripcionManual]):
@@ -43,12 +53,12 @@ if (!isset($_GET['m'])):
                 if ($visible) $coincidencias++;
             ?>
                 <article class="manuales-item"<?= $visible ? '' : ' hidden' ?>>
-                    <h3><a href="manuales.php?m=<?= urlencode($id) ?>"><?= htmlspecialchars($tituloManual, ENT_QUOTES, 'UTF-8') ?></a></h3>
+                    <h3><a href="<?= $urlCatalogo ?>?m=<?= urlencode($id) ?>"><?= htmlspecialchars($tituloManual, ENT_QUOTES, 'UTF-8') ?></a></h3>
                     <p><?= htmlspecialchars($descripcionManual, ENT_QUOTES, 'UTF-8') ?></p>
                 </article>
             <?php endforeach; ?>
         </div>
-        <p id="manuales-sin-resultados" role="status"<?= $coincidencias ? ' hidden' : '' ?>>No se encontraron procedimientos.</p>
+        <p id="manuales-sin-resultados" role="status"<?= $coincidencias ? ' hidden' : '' ?>>No se encontraron <?= $nombrePlural ?>.</p>
     <?php endif; ?>
 </section>
 
@@ -86,7 +96,7 @@ endif;
 // Conserva el comportamiento anterior para enlaces a manuales inválidos.
 $clave = is_string($_GET['m']) && isset($manuales[$_GET['m']]) ? $_GET['m'] : array_key_first($manuales);
 if ($clave === null) {
-    echo '<div class="card"><p>Aún no hay procedimientos disponibles.</p><p><a href="manuales.php">Volver a procedimientos</a></p></div>';
+    echo '<div class="card"><p>Aún no hay ' . $nombrePlural . ' disponibles.</p><p><a href="' . $urlCatalogo . '">Volver a ' . $nombrePlural . '</a></p></div>';
     require __DIR__ . '/layout_fin.php';
     exit;
 }
@@ -103,10 +113,10 @@ if ($clave === null) {
     </div>
 </div>
 
-<p class="manuales-volver"><a href="manuales.php">← Volver a procedimientos</a></p>
+<p class="manuales-volver"><a href="<?= $urlCatalogo ?>">← Volver a <?= $nombrePlural ?></a></p>
 
 <!-- Contenedor donde pdf-reader.js dibuja el PDF servido por ver_manual.php -->
-<div class="pdf-reader" data-pdf="ver_manual.php?f=<?= urlencode($clave) ?>" aria-label="Documento PDF">
+<div class="pdf-reader" data-pdf="<?= $urlPdf ?>?f=<?= urlencode($clave) ?>" aria-label="Documento PDF">
     <p class="pdf-reader-status" role="status">Cargando documento...</p>
 </div>
 
@@ -114,7 +124,7 @@ if ($clave === null) {
 <script src="../JS/pdf-reader.js?v=<?= filemtime(dirname(__DIR__) . '/JS/pdf-reader.js') ?>"></script>
 <script>
     // Al elegir otro manual en el menú lateral, se cambia sin recargar la página
-    const links = document.querySelectorAll(".sidebar a[data-pdf]");
+    const links = document.querySelectorAll('.sidebar a[data-modulo="<?= $esFormatos ? 'formatos' : 'manuales' ?>"]');
     const reader = document.querySelector(".pdf-reader");
 
     links.forEach((link) => {

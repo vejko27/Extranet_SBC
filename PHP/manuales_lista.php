@@ -5,8 +5,9 @@ require_once __DIR__ . '/bd_conexion.php';
 
 $conexion->set_charset('utf8mb4');
 $lista = [];
+$tablaDocumentos = !empty($listarFormatos) ? 'formatos_procedimientos_internos' : 'manuales';
 // Consulta los manuales y los indexa por id
-foreach ($conexion->query("SELECT id, titulo, descripcion, archivo FROM manuales ORDER BY id") as $m) {
+foreach ($conexion->query("SELECT id, titulo, descripcion, archivo FROM $tablaDocumentos ORDER BY id") as $m) {
     $lista[$m['id']] = [$m['titulo'], $m['descripcion'], $m['archivo']];
 }
 return $lista;
