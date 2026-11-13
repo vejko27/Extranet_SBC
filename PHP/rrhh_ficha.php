@@ -28,6 +28,8 @@ if ($conexion->query("SHOW COLUMNS FROM personal LIKE 'foto'")->num_rows === 0) 
 }
 $EXTRA_PLANO = camposExtraPlano($CAMPOS_EXTRA);
 $CAMPOS_CONTRATO = $CAMPOS_EXTRA['Contrato y período laboral'];
+$CAMPOS_CONTRATO_ADICIONAL = $CAMPOS_CONTRATO;
+unset($CAMPOS_CONTRATO_ADICIONAL['fecha_cese'], $CAMPOS_CONTRATO_ADICIONAL['motivo_cese']);
 // Escapa texto para imprimirlo de forma segura en HTML
 function e($v) { return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
 
@@ -288,7 +290,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $fd = limpiarPersona($entradaEmpleado, $CAMPOS_PERSONA, $opc, $errores, 'Empleado', true);
     $contratos = [array_intersect_key($fd, $CAMPOS_CONTRATO)];
     foreach (array_slice($entradasContrato, 1) as $i => $entrada) {
-        $contratos[] = limpiarContrato($entrada, $CAMPOS_CONTRATO, $errores, 'Contrato ' . ($i + 2));
+        $contratos[] = array_replace(
+            array_fill_keys(array_keys($CAMPOS_CONTRATO), ''),
+            limpiarContrato($entrada, $CAMPOS_CONTRATO_ADICIONAL, $errores, 'Contrato ' . ($i + 2))
+        );
     }
 
     // Derechohabiente (cónyuge o concubino): si hay datos, exige tipo, apellido paterno y nombres
@@ -726,7 +731,7 @@ $nombreTitular = trim($fd['apellido_paterno'] . ' ' . $fd['apellido_materno'] . 
             <h2><?= e($titulo) ?></h2>
             <?php if ($titulo === 'Contrato y período laboral'): ?>
                 <div id="lista-contratos">
-                    <?php foreach ($contratos as $i => $contrato) { echo bloqueContrato($i, $contrato, $CAMPOS_CONTRATO, $editable, $i > 0); } ?>
+                    <?php foreach ($contratos as $i => $contrato) { echo bloqueContrato($i, $contrato, $i === 0 ? $CAMPOS_CONTRATO : $CAMPOS_CONTRATO_ADICIONAL, $editable, $i > 0); } ?>
                 </div>
                 <?php if ($editable): ?><button type="button" class="btn-sec" id="add-contrato">+ Agregar contrato</button><?php endif; ?>
             <?php else: ?>
@@ -785,7 +790,7 @@ $nombreTitular = trim($fd['apellido_paterno'] . ' ' . $fd['apellido_materno'] . 
 <?php if ($editable): ?>
 <template id="tpl-hijo"><?= filaHijo('__I__', [], $SEXOS, true) ?></template>
 <template id="tpl-emergencia"><?= filaEmergencia('__I__', [], true) ?></template>
-<template id="tpl-contrato"><?= bloqueContrato('__I__', [], $CAMPOS_CONTRATO, true, true) ?></template>
+<template id="tpl-contrato"><?= bloqueContrato('__I__', [], $CAMPOS_CONTRATO_ADICIONAL, true, true) ?></template>
 <script>
     // Configura una lista dinámica: agrega filas desde la plantilla, las quita y respeta el máximo
     function configurar(listaId, tplId, btnId, max) {
