@@ -145,7 +145,7 @@ require __DIR__ . '/layout_inicio.php';
         <table class="contratos-tabla">
             <thead>
                 <tr>
-                    <th>Unidad</th>
+                    <th>Documento</th>
                     <th>Flota</th>
                     <th>Fecha de inicio</th>
                     <th>Fecha de vencimiento</th>
@@ -166,7 +166,7 @@ require __DIR__ . '/layout_inicio.php';
                     data-trabajador="<?= (int)$fila['personal_id'] ?>"
                     data-unidad="<?= e($fila['unidad']) ?>"
                     data-estado="<?= e($fila['estado_key']) ?>">
-                    <td data-label="Unidad"><a href="rrhh_documentos.php?id=<?= (int)$fila['personal_id'] ?>&amp;tipo=<?= urlencode($fila['unidad']) ?>"><?= e($fila['unidad']) ?></a></td>
+                    <td data-label="Documento"><a href="rrhh_documentos.php?id=<?= (int)$fila['personal_id'] ?>&amp;tipo=<?= urlencode($fila['unidad']) ?>"><?= e($fila['unidad']) ?></a></td>
                     <td data-label="Flota"><?= e($fila['flota'] ?: '—') ?></td>
                     <td data-label="Fecha de inicio"><?= e($fechaInicio) ?></td>
                     <td data-label="Fecha de vencimiento"><?= e($fechaVencimiento) ?></td>
