@@ -22,10 +22,12 @@ if (empty($_SESSION['csrf'])) {
 // Campos adicionales de la ficha; se crean las columnas que falten en la tabla
 require_once __DIR__ . '/rrhh_campos_extra.php';
 garantizarColumnasExtra($conexion, $CAMPOS_EXTRA);
+garantizarTablaContratos($conexion);
 if ($conexion->query("SHOW COLUMNS FROM personal LIKE 'foto'")->num_rows === 0) {
     $conexion->query("ALTER TABLE personal ADD COLUMN foto VARCHAR(40) NOT NULL DEFAULT ''");
 }
 $EXTRA_PLANO = camposExtraPlano($CAMPOS_EXTRA);
+$CAMPOS_CONTRATO = $CAMPOS_EXTRA['Contrato y período laboral'];
 // Escapa texto para imprimirlo de forma segura en HTML
 function e($v) { return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
 
@@ -203,6 +205,26 @@ function limpiarPersona(array $in, array $campos, array $opc, array &$err, strin
     return $o;
 }
 
+function limpiarContrato(array $in, array $campos, array &$err, string $etq): array
+{
+    $contrato = [];
+    foreach ($campos as $nombre => $def) {
+        $valor = trim((string)($in[$nombre] ?? ''));
+        if ($def[1] === 'date' && $valor !== '' && !fechaValida($valor)) {
+            $err[] = "$etq: fecha no válida en «{$def[0]}».";
+            $valor = '';
+        } elseif ($def[1] === 'select' && $valor !== '' && !in_array($valor, $def[2], true)) {
+            $err[] = "$etq: valor no válido en «{$def[0]}».";
+            $valor = '';
+        }
+        $contrato[$nombre] = $valor;
+    }
+    if ($contrato['contrato_inicio'] !== '' && $contrato['contrato_fin'] !== '' && $contrato['contrato_fin'] < $contrato['contrato_inicio']) {
+        $err[] = "$etq: el fin del contrato no puede ser anterior a su inicio.";
+    }
+    return $contrato;
+}
+
 // Indica si todos los campos (salvo los ignorados) están vacíos
 function filaVacia(array $p, array $ignorar = []): bool
 {
@@ -223,6 +245,7 @@ $fd = array_fill_keys(array_merge(
     ['fecha_nacimiento', 'sexo', 'estado_civil', 'num_hijos', 'nivel_educativo', 'fecha_ingreso'],
     array_keys($EXTRA_PLANO)
 ), '');
+$contratos = [array_fill_keys(array_keys($CAMPOS_CONTRATO), '')];
 $conyuge = ['tipo' => ''] + array_fill_keys(array_merge(array_keys($CAMPOS_PERSONA), ['fecha_nacimiento', 'sexo']), '');
 $hijos = [];
 $emergencia = [];
@@ -246,8 +269,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errores[] = 'No tienes permiso para realizar esta acción.';
     }
 
+    // El primer contrato conserva las columnas históricas de personal.
+    $entradasContrato = $_POST['contratos'] ?? null;
+    if (is_array($entradasContrato)) {
+        $entradasContrato = array_values(array_filter($entradasContrato, 'is_array'));
+    } else {
+        $entradasContrato = [$_POST];
+    }
+    if (!$entradasContrato) {
+        $entradasContrato = [[]];
+    }
+    $entradaEmpleado = $_POST;
+    foreach ($CAMPOS_CONTRATO as $nombre => $_) {
+        $entradaEmpleado[$nombre] = $entradasContrato[0][$nombre] ?? '';
+    }
+
     // Datos del empleado (titular)
-    $fd = limpiarPersona($_POST, $CAMPOS_PERSONA, $opc, $errores, 'Empleado', true);
+    $fd = limpiarPersona($entradaEmpleado, $CAMPOS_PERSONA, $opc, $errores, 'Empleado', true);
+    $contratos = [array_intersect_key($fd, $CAMPOS_CONTRATO)];
+    foreach (array_slice($entradasContrato, 1) as $i => $entrada) {
+        $contratos[] = limpiarContrato($entrada, $CAMPOS_CONTRATO, $errores, 'Contrato ' . ($i + 2));
+    }
 
     // Derechohabiente (cónyuge o concubino): si hay datos, exige tipo, apellido paterno y nombres
     $in = $_POST['conyuge'] ?? [];
@@ -372,6 +414,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $x->bind_param('i', $id);
                     $x->execute();
                 }
+                $x = $conexion->prepare("DELETE FROM personal_contratos WHERE personal_id=?");
+                $x->bind_param('i', $id);
+                $x->execute();
             } else {
                 // Alta: inserta la ficha y obtiene el nuevo id
                 $lista =  implode(',', array_map(fn($c) => "`$c`", $cols));
@@ -381,6 +426,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $s->bind_param(str_repeat('s', count($cols)), ...$params);
                 $s->execute();
                 $id = $conexion->insert_id;
+            }
+
+            $insContrato = $conexion->prepare("INSERT INTO personal_contratos
+                (personal_id, tipo_contrato, contrato_inicio, contrato_fin, periodo_inicio, fecha_cese, motivo_cese)
+                VALUES (?, ?, ?, ?, ?, ?, ?)");
+            foreach (array_slice($contratos, 1) as $contrato) {
+                if (filaVacia($contrato)) {
+                    continue;
+                }
+                $tipo = $contrato['tipo_contrato'];
+                $inicio = $contrato['contrato_inicio'] === '' ? null : $contrato['contrato_inicio'];
+                $fin = $contrato['contrato_fin'] === '' ? null : $contrato['contrato_fin'];
+                $periodoInicio = $contrato['periodo_inicio'] === '' ? null : $contrato['periodo_inicio'];
+                $fechaCese = $contrato['fecha_cese'] === '' ? null : $contrato['fecha_cese'];
+                $motivo = $contrato['motivo_cese'];
+                $insContrato->bind_param('issssss', $id, $tipo, $inicio, $fin, $periodoInicio, $fechaCese, $motivo);
+                $insContrato->execute();
             }
 
             // Inserta cónyuge/concubino e hijos en derechohabientes
@@ -448,6 +510,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     foreach ($fd as $k => $_) {
         $fd[$k] = (string)($fila[$k] ?? '');
     }
+    $contratos[0] = array_intersect_key($fd, $CAMPOS_CONTRATO);
+    $s = $conexion->prepare("SELECT tipo_contrato, contrato_inicio, contrato_fin, periodo_inicio, fecha_cese, motivo_cese
+        FROM personal_contratos WHERE personal_id = ? ORDER BY id");
+    $s->bind_param('i', $id);
+    $s->execute();
+    foreach ($s->get_result()->fetch_all(MYSQLI_ASSOC) as $contrato) {
+        foreach ($contrato as $nombre => $valor) {
+            $contrato[$nombre] = (string)($valor ?? '');
+        }
+        $contratos[] = $contrato;
+    }
     $s = $conexion->prepare("SELECT * FROM personal_derechohabientes WHERE personal_id = ? ORDER BY id");
     $s->bind_param('i', $id);
     $s->execute();
@@ -477,6 +550,23 @@ function opciones(array $lista, string $sel, string $vacio = '— Seleccionar �
 function campo(string $etq, string $nombre, string $valor, string $extra = '', string $tipo = 'text'): string
 {
     return '<div class="form-grupo"><label>' . e($etq) . '</label><input type="' . $tipo . '" name="' . e($nombre) . '" value="' . e($valor) . '" ' . $extra . '></div>';
+}
+function bloqueContrato($i, array $valores, array $campos, bool $editable, bool $quitable): string
+{
+    $h = '<div class="ficha-item"><div class="ficha-item-cab"><strong>Contrato</strong>';
+    if ($editable && $quitable) {
+        $h .= '<button type="button" class="btn-sec btn-quitar">Quitar</button>';
+    }
+    $h .= '</div><div class="ficha-grid">';
+    foreach ($campos as $nombre => $def) {
+        $campoNombre = "contratos[$i][$nombre]";
+        if ($def[1] === 'date') {
+            $h .= campo($def[0], $campoNombre, $valores[$nombre] ?? '', '', 'date');
+        } else {
+            $h .= '<div class="form-grupo"><label>' . e($def[0]) . '</label><select name="' . e($campoNombre) . '">' . opciones($def[2], $valores[$nombre] ?? '') . '</select></div>';
+        }
+    }
+    return $h . '</div></div>';
 }
 // Genera el bloque de campos de una persona; $pre es el prefijo del name (p. ej. hijos[0])
 function bloquePersona(string $pre, array $p, array $SEXOS): string
@@ -634,6 +724,12 @@ $nombreTitular = trim($fd['apellido_paterno'] . ' ' . $fd['apellido_materno'] . 
         <?php foreach ($CAMPOS_EXTRA as $titulo => $campos): ?>
         <div class="card">
             <h2><?= e($titulo) ?></h2>
+            <?php if ($titulo === 'Contrato y período laboral'): ?>
+                <div id="lista-contratos">
+                    <?php foreach ($contratos as $i => $contrato) { echo bloqueContrato($i, $contrato, $CAMPOS_CONTRATO, $editable, $i > 0); } ?>
+                </div>
+                <?php if ($editable): ?><button type="button" class="btn-sec" id="add-contrato">+ Agregar contrato</button><?php endif; ?>
+            <?php else: ?>
             <div class="ficha-grid">
                 <?php foreach ($campos as $nombre => $def): ?>
                     <?php if ($def[1] === 'date'): ?>
@@ -649,6 +745,7 @@ $nombreTitular = trim($fd['apellido_paterno'] . ' ' . $fd['apellido_materno'] . 
                     <?php endif; ?>
                 <?php endforeach; ?>
             </div>
+            <?php endif; ?>
         </div>
         <?php endforeach; ?>
 
@@ -688,6 +785,7 @@ $nombreTitular = trim($fd['apellido_paterno'] . ' ' . $fd['apellido_materno'] . 
 <?php if ($editable): ?>
 <template id="tpl-hijo"><?= filaHijo('__I__', [], $SEXOS, true) ?></template>
 <template id="tpl-emergencia"><?= filaEmergencia('__I__', [], true) ?></template>
+<template id="tpl-contrato"><?= bloqueContrato('__I__', [], $CAMPOS_CONTRATO, true, true) ?></template>
 <script>
     // Configura una lista dinámica: agrega filas desde la plantilla, las quita y respeta el máximo
     function configurar(listaId, tplId, btnId, max) {
@@ -710,6 +808,17 @@ $nombreTitular = trim($fd['apellido_paterno'] . ' ' . $fd['apellido_materno'] . 
     // Inicializa las listas de hijos y de contactos con sus límites
     configurar("lista-hijos", "tpl-hijo", "add-hijo", <?= MAX_HIJOS ?>);
     configurar("lista-emergencia", "tpl-emergencia", "add-emergencia", <?= MAX_EMERGENCIA ?>);
+
+    const listaContratos = document.getElementById("lista-contratos");
+    const plantillaContrato = document.getElementById("tpl-contrato");
+    let indiceContrato = listaContratos.children.length + 100;
+    document.getElementById("add-contrato").addEventListener("click", () => {
+        listaContratos.insertAdjacentHTML("beforeend", plantillaContrato.innerHTML.replaceAll("__I__", indiceContrato++));
+    });
+    listaContratos.addEventListener("click", (ev) => {
+        const quitar = ev.target.closest(".btn-quitar");
+        if (quitar) quitar.closest(".ficha-item").remove();
+    });
 </script>
 <?php endif; ?>
 

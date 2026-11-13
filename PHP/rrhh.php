@@ -6,9 +6,11 @@ $paginaActiva = 'rrhh';
 $tituloPagina = 'Recursos Humanos';
 require_once __DIR__ . '/auth.php';
 require __DIR__ . '/bd_conexion.php';
+require_once __DIR__ . '/rrhh_campos_extra.php';
 
 // Permisos: se exige "ver" para entrar y se calculan los permisos de las demás acciones
 exigirPermiso('Recursos Humanos', 'ver');
+garantizarTablaContratos($conexion);
 $puedeCrear = puede('Recursos Humanos', 'crear');
 $puedeEditar = puede('Recursos Humanos', 'editar');
 $puedeEliminar = puede('Recursos Humanos', 'eliminar');
@@ -98,6 +100,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($foto = $qf->get_result()->fetch_column()) {
                 $archivos[] = $foto;
             }
+            $qc = $conexion->prepare("DELETE FROM personal_contratos WHERE personal_id = ?");
+            $qc->bind_param('i', $id);
+            $qc->execute();
             // Elimina la ficha del personal
             $s = $conexion->prepare("DELETE FROM personal WHERE id = ?");
             $s->bind_param('i', $id);
