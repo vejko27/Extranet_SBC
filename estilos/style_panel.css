@@ -185,6 +185,29 @@ tr:hover td { background: #f8fafc; }
 .contratos-tabla.sin-colores tr.estado-revisar td { background: #fff; }
 .contratos-estado { font-weight: 700; white-space: nowrap; }
 .contratos-tabla a { color: #00566c; font-weight: 600; }
+.documentos-vencidos-controles { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; margin-bottom: 12px; }
+.documentos-vencidos-controles label { display: flex; flex: 1 1 180px; flex-direction: column; gap: 6px; min-width: 0; color: #334155; font-size: 14px; font-weight: 600; }
+.documentos-vencidos-controles select { width: 100%; }
+.documentos-vencidos-controles button[aria-pressed="true"] { outline: 2px solid #006d88; outline-offset: 1px; }
+.documentos-tabla { min-width: 1000px; }
+.documentos-tabla td { vertical-align: top; overflow-wrap: anywhere; }
+.documento-vigencia-contenido { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-width: 165px; }
+.documento-editar-vigencia { padding: 4px 0; background: transparent; color: #00566c; text-align: left; text-decoration: underline; }
+.documento-editar-vigencia:hover { background: transparent; color: #00394a; transform: none; }
+.documento-vigencia-modal { width: min(460px, calc(100% - 32px)); max-width: none; }
+.documento-vigencia-modal h2 { margin-bottom: 6px; }
+.documento-vigencia-descripcion { margin-bottom: 18px; color: #64748b; overflow-wrap: anywhere; }
+.documento-vigencia-form { display: grid; gap: 14px; text-align: left; }
+.documento-vigencia-form label:not(.documentos-check) { display: grid; gap: 4px; color: #334155; font-size: 13px; font-weight: 600; }
+.documento-vigencia-form input[type="date"] { width: 100%; min-width: 0; }
+.documento-vigencia-modal input[type="checkbox"] { width: 20px; flex: 0 0 20px; }
+.documento-vigencia-botones { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
+.documentos-check { display: flex; align-items: center; gap: 8px; }
+.ficha .documentos-check input[type="checkbox"] { width: 20px; flex: 0 0 20px; }
+.documento-acciones { display: grid; grid-template-columns: repeat(3, minmax(85px, 1fr)); gap: 6px; }
+.documento-acciones .form-inline { display: block; margin: 0; }
+.documento-acciones .btn, .documento-acciones button { display: block; width: 100%; padding: 11px 8px; text-align: center; }
+.contratos-tabla tr[hidden] { display: none !important; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 
 .btn-sec { background: #e2e8f0; color: #334155; }
@@ -339,6 +362,37 @@ dialog { max-height: 92vh; overflow-y: auto; }
     .form-prov-secciones, .form-prov-columna, .form-prov-grid { grid-template-columns: 1fr; }
     .form-prov-secciones { max-height: 62vh; }
     .form-prov-grid .form-prov-ancho { grid-column: auto; }
+}
+
+@media (max-width: 1100px) {
+    .documentos-tabla, .contratos-tabla { min-width: 0; }
+    .documentos-tabla, .documentos-tabla tbody, .documentos-tabla tr, .documentos-tabla td,
+    .contratos-tabla, .contratos-tabla tbody, .contratos-tabla tr, .contratos-tabla td { display: block; width: 100%; }
+    .documentos-tabla tr:first-child { display: none; }
+    .contratos-tabla thead { display: none; }
+    .contratos-tabla tbody tr:first-child:not([hidden]) { display: block; }
+    .documentos-tabla tr, .contratos-tabla tbody tr { border: 1px solid #e2e8f0; border-radius: 10px; margin-bottom: 14px; padding: 6px 0; }
+    .documentos-tabla td, .contratos-tabla td { display: flex; justify-content: space-between; align-items: center; gap: 12px; text-align: right; border-bottom: 1px solid #f1f5f9; padding: 9px 14px; overflow-wrap: anywhere; }
+    .documentos-tabla td:last-child, .contratos-tabla td:last-child { border-bottom: 0; }
+    .documentos-tabla td::before, .contratos-tabla td::before { content: attr(data-label); font-weight: 600; color: #475569; text-align: left; flex-shrink: 0; }
+    .documentos-tabla td.celda-acciones { justify-content: flex-end; white-space: normal; }
+    .documentos-tabla td.celda-acciones::before { display: none; }
+    .documentos-tabla td.documento-vigencia { display: block; text-align: left; }
+    .documentos-tabla td.documento-vigencia::before { display: block; margin-bottom: 6px; }
+    .documento-vigencia-contenido { min-width: 0; }
+    .documento-acciones { width: 100%; max-width: 380px; }
+    .contratos-tabla td { min-width: 0; }
+    .contratos-tabla td::before { flex: 0 1 45%; }
+    .contratos-tabla td[data-label="Acciones"] { flex-wrap: wrap; }
+}
+
+@media (max-width: 480px) {
+    .documentos-vencidos-controles label { flex-basis: 100%; }
+    .documentos-vencidos-controles button { flex: 1 1 140px; }
+    .contratos-controles input { flex-basis: 100%; }
+    .documento-acciones { max-width: none; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .documento-acciones form { grid-column: 1 / -1; }
+    .documento-vigencia-botones button { flex: 1; }
 }
 
 @media (max-width: 800px) {

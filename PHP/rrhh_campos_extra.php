@@ -147,3 +147,30 @@ function garantizarTablaContratos(mysqli $conexion): void
         exit('No se pudo preparar el registro de contratos. Contacte al administrador.');
     }
 }
+
+function garantizarColumnasVigenciaDocumentos(mysqli $conexion): void
+{
+    $res = $conexion->query("SHOW COLUMNS FROM personal_documentos");
+    if (!$res) {
+        error_log('Extranet_SBC: no se pudieron verificar las columnas de vigencia de personal_documentos: ' . $conexion->error);
+        http_response_code(500);
+        exit('No se pudo preparar el seguimiento de documentos. Contacte al administrador.');
+    }
+
+    $existentes = array_column($res->fetch_all(MYSQLI_ASSOC), 'Field');
+    $faltantes = [];
+    foreach ([
+        'fecha_inicio' => 'DATE NULL',
+        'fecha_vencimiento' => 'DATE NULL',
+        'sin_vencimiento' => 'TINYINT(1) NOT NULL DEFAULT 0',
+    ] as $nombre => $tipo) {
+        if (!in_array($nombre, $existentes, true)) {
+            $faltantes[] = "ADD COLUMN `$nombre` $tipo";
+        }
+    }
+    if ($faltantes && !$conexion->query('ALTER TABLE personal_documentos ' . implode(', ', $faltantes))) {
+        error_log('Extranet_SBC: no se pudieron agregar columnas de vigencia a personal_documentos: ' . $conexion->error);
+        http_response_code(500);
+        exit('No se pudo preparar el seguimiento de documentos. Contacte al administrador.');
+    }
+}
