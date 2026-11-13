@@ -12,6 +12,7 @@ $veFormatos = puede('Formatos de Procedimientos internos', 'ver');
 $adminFormatos = puede('Formatos de Procedimientos internos', 'crear') || puede('Formatos de Procedimientos internos', 'editar') || puede('Formatos de Procedimientos internos', 'eliminar');
 $veProveedores = puede('Proveedores', 'ver');
 $veRRHH = puede('Recursos Humanos', 'ver');
+$veDetraccion = puedeVerDetraccion();
 $rrhhActivo = in_array($paginaActiva, ['rrhh', 'rrhh_contratos', 'rrhh_documentos_vencidos', 'rrhh_boletas'], true);
 // Lista de manuales y manual activo (solo en la página de manuales)
 $listarFormatos = false;
@@ -70,6 +71,9 @@ $formatoActivo = $paginaActiva === 'formatos_procedimientos' && isset($_GET['m']
             <?php endif; ?>
             <?php if ($veProveedores): ?>
                 <a href="proveedores.php" data-short="P" title="Proveedores" class="<?= $paginaActiva === 'proveedores' ? 'activo' : '' ?>">Proveedores</a>
+            <?php endif; ?>
+            <?php if ($veDetraccion): ?>
+                <a href="calculo_detraccion.php" data-short="CD" title="Cálculo de detracción" class="<?= $paginaActiva === 'calculo_detraccion' ? 'activo' : '' ?>">Cálculo de detracción</a>
             <?php endif; ?>
             <?php if ($veRRHH): ?>
                 <button type="button" class="grupo-titulo grupo-toggle<?= $rrhhActivo ? ' activo' : '' ?>" id="toggle-recursos-humanos" data-short="RH" title="Recursos Humanos" aria-expanded="true" aria-controls="submenu-recursos-humanos">
