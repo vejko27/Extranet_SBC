@@ -214,6 +214,31 @@ tr:hover td { background: #f8fafc; }
 .documentos-grupo .estado-vencido .contratos-estado { background: #fee2e2; color: #991b1b; }
 .documentos-grupo .contratos-tabla.sin-colores .contratos-estado { background: #f1f5f9; color: #475569; }
 .documentos-grupo .contratos-tabla .btn { display: inline-flex; justify-content: center; padding: 8px 12px; font-size: 13px; text-align: center; text-decoration: none; white-space: normal; }
+.boletas-controles { display: flex; flex-wrap: wrap; align-items: end; gap: 16px; }
+.boletas-anio { display: flex; flex-wrap: wrap; align-items: end; gap: 8px; }
+.boletas-anio label, .boletas-buscar { color: #334155; font-size: 14px; font-weight: 600; }
+.boletas-anio label { flex-basis: 100%; }
+.boletas-anio input { width: 110px; }
+.boletas-buscar { display: flex; flex: 1 1 220px; flex-direction: column; gap: 8px; min-width: 0; }
+.boletas-buscar input { width: 100%; }
+.boletas-ayuda { margin: 14px 0; color: #64748b; font-size: 14px; }
+.boletas-mensaje { min-height: 20px; margin-bottom: 8px; color: #166534; font-size: 14px; }
+.boletas-mensaje.boletas-error { color: #b91c1c; }
+.boletas-tabla-wrap { max-width: 100%; border: 1px solid #e2e8f0; border-radius: 10px; }
+.boletas-tabla { min-width: 2100px; }
+.boletas-tabla th, .boletas-tabla td { padding: 9px 8px; }
+.boletas-tabla th { font-size: 12px; }
+.boletas-tabla th:first-child, .boletas-tabla .boletas-nombre { position: sticky; left: 0; z-index: 1; min-width: 200px; border-right: 1px solid #e2e8f0; }
+.boletas-tabla th:first-child { z-index: 2; }
+.boletas-tabla .boletas-nombre { background: #fff; }
+.boletas-tabla .boletas-nombre a { color: #00566c; font-weight: 600; }
+.boletas-estado { width: 120px; padding: 8px 6px; font-size: 13px; cursor: pointer; }
+.boletas-estado[data-valor="entregado"] { border-color: #86efac; background: #f0fdf4; color: #166534; }
+.boletas-estado[data-valor="no_aplica"] { border-color: #cbd5e1; background: #f1f5f9; color: #475569; }
+.boletas-estado:disabled { opacity: 1; cursor: default; }
+.boletas-celda-error { display: block; max-width: 120px; color: #b91c1c; font-size: 12px; }
+.boletas-tabla .boletas-total, .boletas-tabla .boletas-personal-estado { text-align: center; }
+.boletas-tabla tr[hidden], #boletas-sin-resultados[hidden] { display: none !important; }
 .documentos-tabla { min-width: 1000px; }
 .documentos-tabla td { vertical-align: top; overflow-wrap: anywhere; }
 .documento-vigencia-contenido { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-width: 165px; }
@@ -373,6 +398,16 @@ dialog { max-height: 92vh; overflow-y: auto; }
     td.celda-acciones .form-inline { margin: 0; }
     td.celda-acciones::before { display: none; }
     tr:hover td { background: transparent; }
+    .boletas-tabla-wrap { border: 0; overflow: visible; }
+    .boletas-tabla, .boletas-tabla tbody { display: block; min-width: 0; width: 100%; }
+    .boletas-tabla thead { display: none; }
+    .boletas-tabla tbody tr.boletas-trabajador:not([hidden]) { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; width: 100%; padding: 14px; background: #fff; }
+    .boletas-tabla td { display: flex; flex-direction: column; align-items: stretch; gap: 6px; width: 100%; min-width: 0; padding: 0; border: 0; text-align: left; }
+    .boletas-tabla td::before { font-size: 13px; }
+    .boletas-tabla .boletas-nombre { position: static; grid-column: 1 / -1; min-width: 0; padding-bottom: 12px; border-right: 0; border-bottom: 1px solid #e2e8f0; }
+    .boletas-tabla .boletas-total, .boletas-tabla .boletas-personal-estado { text-align: left; }
+    .boletas-tabla .boletas-personal-estado .badge { align-self: flex-start; }
+    .boletas-estado { width: 100%; }
 }
 
 @media (max-width: 480px) {

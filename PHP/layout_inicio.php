@@ -12,7 +12,7 @@ $veFormatos = puede('Formatos de Procedimientos internos', 'ver');
 $adminFormatos = puede('Formatos de Procedimientos internos', 'crear') || puede('Formatos de Procedimientos internos', 'editar') || puede('Formatos de Procedimientos internos', 'eliminar');
 $veProveedores = puede('Proveedores', 'ver');
 $veRRHH = puede('Recursos Humanos', 'ver');
-$rrhhActivo = in_array($paginaActiva, ['rrhh', 'rrhh_contratos', 'rrhh_documentos_vencidos'], true);
+$rrhhActivo = in_array($paginaActiva, ['rrhh', 'rrhh_contratos', 'rrhh_documentos_vencidos', 'rrhh_boletas'], true);
 // Lista de manuales y manual activo (solo en la página de manuales)
 $listarFormatos = false;
 $manuales = require __DIR__ . '/manuales_lista.php';
@@ -79,6 +79,7 @@ $formatoActivo = $paginaActiva === 'formatos_procedimientos' && isset($_GET['m']
                     <a href="rrhh.php" class="sub<?= $paginaActiva === 'rrhh' ? ' activo' : '' ?>" title="Fichas del personal">Personal</a>
                     <a href="rrhh_contratos.php" class="sub<?= $paginaActiva === 'rrhh_contratos' ? ' activo' : '' ?>" title="Seguimiento de contratos">Contratos</a>
                     <a href="rrhh_documentos_vencidos.php" class="sub<?= $paginaActiva === 'rrhh_documentos_vencidos' ? ' activo' : '' ?>" title="Seguimiento de documentos vencidos">Documentos vencidos</a>
+                    <a href="rrhh_boletas.php" class="sub<?= $paginaActiva === 'rrhh_boletas' ? ' activo' : '' ?>" title="Control de entrega de boletas">Entrega de boletas</a>
                 </div>
                 <script>
                 (function () {
