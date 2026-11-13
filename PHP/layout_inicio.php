@@ -12,6 +12,7 @@ $veFormatos = puede('Formatos de Procedimientos internos', 'ver');
 $adminFormatos = puede('Formatos de Procedimientos internos', 'crear') || puede('Formatos de Procedimientos internos', 'editar') || puede('Formatos de Procedimientos internos', 'eliminar');
 $veProveedores = puede('Proveedores', 'ver');
 $veRRHH = puede('Recursos Humanos', 'ver');
+$rrhhActivo = in_array($paginaActiva, ['rrhh', 'rrhh_contratos'], true);
 // Lista de manuales y manual activo (solo en la página de manuales)
 $listarFormatos = false;
 $manuales = require __DIR__ . '/manuales_lista.php';
@@ -71,7 +72,26 @@ $formatoActivo = $paginaActiva === 'formatos_procedimientos' && isset($_GET['m']
                 <a href="proveedores.php" data-short="P" title="Proveedores" class="<?= $paginaActiva === 'proveedores' ? 'activo' : '' ?>">Proveedores</a>
             <?php endif; ?>
             <?php if ($veRRHH): ?>
-                <a href="rrhh.php" data-short="RH" title="Recursos Humanos" class="<?= $paginaActiva === 'rrhh' ? 'activo' : '' ?>">Recursos Humanos</a>
+                <button type="button" class="grupo-titulo grupo-toggle<?= $rrhhActivo ? ' activo' : '' ?>" id="toggle-recursos-humanos" data-short="RH" title="Recursos Humanos" aria-expanded="true" aria-controls="submenu-recursos-humanos">
+                    <span class="grupo-nombre">Recursos Humanos</span><span class="flecha" aria-hidden="true">▾</span>
+                </button>
+                <div class="submenu" id="submenu-recursos-humanos">
+                    <a href="rrhh.php" class="sub<?= $paginaActiva === 'rrhh' ? ' activo' : '' ?>" title="Fichas del personal">Personal</a>
+                    <a href="rrhh_contratos.php" class="sub<?= $paginaActiva === 'rrhh_contratos' ? ' activo' : '' ?>" title="Seguimiento de contratos">Contratos</a>
+                </div>
+                <script>
+                (function () {
+                    var b = document.getElementById('toggle-recursos-humanos'), s = document.getElementById('submenu-recursos-humanos');
+                    function set(abierto) {
+                        b.setAttribute('aria-expanded', abierto);
+                        s.hidden = !abierto;
+                        try { localStorage.setItem('menuRecursosHumanos', abierto ? '1' : '0'); } catch (e) {}
+                    }
+                    var g = null; try { g = localStorage.getItem('menuRecursosHumanos'); } catch (e) {}
+                    set(g !== '0' || <?= $rrhhActivo ? 'true' : 'false' ?>);
+                    b.addEventListener('click', function () { set(b.getAttribute('aria-expanded') !== 'true'); });
+                })();
+                </script>
             <?php endif; ?>
             <?php if ($veManuales): ?>
                 <!-- Submenú desplegable con un enlace por cada manual -->
