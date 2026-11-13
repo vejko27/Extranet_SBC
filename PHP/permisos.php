@@ -108,6 +108,7 @@ require __DIR__ . '/layout_inicio.php';
 
 <!-- Tabla de permisos: una fila por módulo y una casilla por acción (bloqueada para el Administrador) -->
 <div class="card">
+    <p class="subtitulo" style="margin-bottom:16px">Para acceder a Cálculo de detracción se utiliza el permiso Ver.</p>
     <?php if ($esAdminSel): ?>
         <p class="subtitulo" style="margin-bottom:16px">El Administrador siempre tiene todos los permisos y no se puede modificar.</p>
     <?php endif; ?>

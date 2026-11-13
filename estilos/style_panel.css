@@ -264,6 +264,11 @@ tr:hover td { background: #f8fafc; }
 .detraccion-cabecera { display: flex; flex-wrap: wrap; align-items: start; justify-content: space-between; gap: 14px; margin-bottom: 20px; }
 .detraccion-cabecera h2 { margin-bottom: 4px; }
 .detraccion-cabecera p, .detraccion-resultados > p, .detraccion-referencias > p, .detraccion-nota { color: #64748b; font-size: 14px; line-height: 1.5; }
+.detraccion-acciones { display: flex; flex-wrap: wrap; gap: 8px; }
+.detraccion-acciones button:disabled { opacity: .6; cursor: not-allowed; }
+.detraccion-mensaje { margin-top: 16px; color: #166534; font-size: 14px; line-height: 1.5; }
+.detraccion-mensaje:empty { display: none; }
+.detraccion-mensaje.detraccion-error { color: #b91c1c; }
 .detraccion-campos { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 16px; }
 .detraccion-campos label { display: flex; flex-direction: column; gap: 7px; min-width: 0; color: #334155; font-size: 14px; font-weight: 600; }
 .detraccion-campos input, .detraccion-campos select { width: 100%; }

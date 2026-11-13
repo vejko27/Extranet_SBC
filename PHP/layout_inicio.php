@@ -12,7 +12,7 @@ $veFormatos = puede('Formatos de Procedimientos internos', 'ver');
 $adminFormatos = puede('Formatos de Procedimientos internos', 'crear') || puede('Formatos de Procedimientos internos', 'editar') || puede('Formatos de Procedimientos internos', 'eliminar');
 $veProveedores = puede('Proveedores', 'ver');
 $veRRHH = puede('Recursos Humanos', 'ver');
-$veDetraccion = puedeVerDetraccion();
+$veDetraccion = puede('Cálculo de detracción', 'ver');
 $rrhhActivo = in_array($paginaActiva, ['rrhh', 'rrhh_contratos', 'rrhh_documentos_vencidos', 'rrhh_boletas'], true);
 // Lista de manuales y manual activo (solo en la página de manuales)
 $listarFormatos = false;

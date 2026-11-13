@@ -47,37 +47,3 @@ function exigirPermiso(string $modulo, string $accion): void
         exit('Acceso denegado');
     }
 }
-
-function puedeVerDetraccion(): bool
-{
-    static $permitido = null;
-    if ($permitido !== null) {
-        return $permitido;
-    }
-
-    $rol = (int)($_SESSION['rol_id'] ?? 0);
-    if ($rol === 1) {
-        return $permitido = true;
-    }
-    if ($rol <= 0) {
-        return $permitido = false;
-    }
-
-    global $conexion;
-    $consulta = $conexion->prepare('SELECT nombre FROM roles WHERE id = ?');
-    if (!$consulta) {
-        error_log('Extranet_SBC: no se pudo verificar el acceso a detracciones: ' . $conexion->error);
-        http_response_code(500);
-        exit('No se pudo verificar el acceso. Contacte al administrador.');
-    }
-    $consulta->bind_param('i', $rol);
-    if (!$consulta->execute() || !($resultado = $consulta->get_result())) {
-        error_log('Extranet_SBC: no se pudo consultar el rol para detracciones: ' . $consulta->error);
-        http_response_code(500);
-        exit('No se pudo verificar el acceso. Contacte al administrador.');
-    }
-    $fila = $resultado->fetch_assoc();
-    $consulta->close();
-    $nombre = trim((string)($fila['nombre'] ?? ''));
-    return $permitido = strcasecmp($nombre, 'Gerencial') === 0 || strcasecmp($nombre, 'Procesos') === 0;
-}
