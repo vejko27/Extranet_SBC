@@ -266,6 +266,8 @@ tr:hover td { background: #f8fafc; }
 .detraccion-cabecera p, .detraccion-resultados > p, .detraccion-referencias > p, .detraccion-nota { color: #64748b; font-size: 14px; line-height: 1.5; }
 .detraccion-acciones { display: flex; flex-wrap: wrap; gap: 8px; }
 .detraccion-acciones button:disabled { opacity: .6; cursor: not-allowed; }
+.detraccion-enlace-sunat { margin-bottom: 20px; }
+.detraccion-enlace-sunat a { display: inline-block; max-width: 100%; text-align: center; }
 .detraccion-mensaje { margin-top: 16px; color: #166534; font-size: 14px; line-height: 1.5; }
 .detraccion-mensaje:empty { display: none; }
 .detraccion-mensaje.detraccion-error { color: #b91c1c; }

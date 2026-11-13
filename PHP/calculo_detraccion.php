@@ -31,6 +31,9 @@ require __DIR__ . '/layout_inicio.php';
             <button type="reset" class="btn-sec">Limpiar</button>
         </div>
     </div>
+    <p class="detraccion-enlace-sunat">
+        <a class="btn btn-sec" href="https://e-consulta.sunat.gob.pe/cl-at-ittipcam/tcS01Alias" target="_blank" rel="noopener noreferrer">SUNAT - Tipo de Cambio Oficial (abre una nueva pestaña)</a>
+    </p>
     <div class="detraccion-campos">
         <label>Moneda de la factura
             <select name="moneda" id="detraccion-moneda">
@@ -71,8 +74,7 @@ require __DIR__ . '/layout_inicio.php';
     </div>
     <noscript><p class="alerta err">Activa JavaScript para calcular la detracción.</p></noscript>
     <p id="detraccion-mensaje" class="detraccion-mensaje" role="status" aria-live="polite"></p>
-    <p class="detraccion-nota">Consulta el tipo de cambio correspondiente a la fecha de emisión de la factura en
-        <a href="https://e-consulta.sunat.gob.pe/cl-at-ittipcam/tcS01Alias" target="_blank" rel="noopener noreferrer">SUNAT: tipo de cambio</a>.
+    <p class="detraccion-nota">Consulta en SUNAT el tipo de cambio correspondiente a la fecha de emisión de la factura.
         El tipo de cambio es obligatorio para facturas en dólares y opcional para mostrar la detracción en dólares cuando la factura está en soles.
     </p>
 </form>
