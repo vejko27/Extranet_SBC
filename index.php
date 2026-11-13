@@ -42,9 +42,28 @@ $err = $_GET['error'] ?? '';
         <input type="text" id="usuario" name="usuario" placeholder="Usuario" required>
 
         <label for="password">Contraseña</label>
-        <input type="password" id="password" name="password" placeholder=".............." required>
+        <div class="password-field">
+          <input type="password" id="password" name="password" placeholder=".............." required>
+          <button class="password-toggle" type="button" aria-label="Mostrar contraseña" aria-pressed="false" aria-controls="password">
+            <svg class="eye-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"></path>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+          </button>
+        </div>
         <button class="botton" type="submit">Iniciar Sesión SBC</button>
       </form>
     </div>
+    <script>
+      const passwordInput = document.getElementById('password');
+      const passwordToggle = document.querySelector('.password-toggle');
+
+      passwordToggle.addEventListener('click', () => {
+        const isVisible = passwordInput.type === 'text';
+        passwordInput.type = isVisible ? 'password' : 'text';
+        passwordToggle.setAttribute('aria-pressed', String(!isVisible));
+        passwordToggle.setAttribute('aria-label', isVisible ? 'Mostrar contraseña' : 'Ocultar contraseña');
+      });
+    </script>
   </body>
 </html>
