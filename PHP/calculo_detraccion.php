@@ -15,8 +15,8 @@ require __DIR__ . '/layout_inicio.php';
 </div>
 
 <div class="alerta detraccion-aviso" role="status">
-    <strong>Transporte: 4 % desde S/ 400 sobre la base seleccionada.</strong>
-    Selecciona la base y el redondeo según las indicaciones de la contadora. El caso con chofer adicional aún está pendiente de confirmación.
+    <strong>Transporte: 4 % desde S/ 400 sobre el mayor entre la factura en soles y el valor referencial.</strong>
+    Ingresa el valor referencial cuando corresponda y selecciona el redondeo según las indicaciones de la contadora. El caso con chofer adicional aún está pendiente de confirmación.
     Para S/ 400 exactos, ten en cuenta que la <a href="https://orientacion.sunat.gob.pe/detracciones-en-el-transporte-de-bienes-por-via-terrestre" target="_blank" rel="noopener noreferrer">SUNAT indica un importe mayor a S/ 400</a>; verifica antes de realizar el depósito.
 </div>
 
@@ -44,18 +44,11 @@ require __DIR__ . '/layout_inicio.php';
         <label>Importe de la factura
             <input type="number" name="importe" id="detraccion-importe" min="0" max="9999999999.99" step="0.01" inputmode="decimal" placeholder="0.00" required>
         </label>
-        <label>Valor referencial (S/)
+        <label>Valor referencial (S/, si corresponde)
             <input type="number" name="referencial" id="detraccion-referencial" min="0" max="9999999999.99" step="0.01" inputmode="decimal" placeholder="0.00">
         </label>
         <label>Tipo de cambio venta
             <input type="number" name="tipo_cambio" id="detraccion-tipo-cambio" min="0.001" max="9999.999" step="0.001" inputmode="decimal" placeholder="0.000">
-        </label>
-        <label>Base para el 4 %
-            <select name="base" id="detraccion-base" required>
-                <option value="">Seleccionar</option>
-                <option value="factura">Importe de factura en soles</option>
-                <option value="referencial">Valor referencial en soles</option>
-            </select>
         </label>
         <label>¿Incluye chofer adicional?
             <select name="chofer" id="detraccion-chofer" required>
@@ -76,6 +69,7 @@ require __DIR__ . '/layout_inicio.php';
     <p id="detraccion-mensaje" class="detraccion-mensaje" role="status" aria-live="polite"></p>
     <p class="detraccion-nota">Consulta en SUNAT el tipo de cambio correspondiente a la fecha de emisión de la factura.
         El tipo de cambio es obligatorio para facturas en dólares y opcional para mostrar la detracción en dólares cuando la factura está en soles.
+        Deja vacío el valor referencial solo cuando no corresponda.
     </p>
 </form>
 
@@ -84,6 +78,7 @@ require __DIR__ . '/layout_inicio.php';
     <p>El neto se muestra en la moneda de la factura. Los dólares se redondean a dos decimales.</p>
     <div class="detraccion-resultados-grid">
         <div><span>Factura en soles</span><strong id="resultado-factura">—</strong></div>
+        <div><span>Base de detracción en soles</span><strong id="resultado-base">—</strong></div>
         <div><span>Detracción en soles</span><strong id="resultado-soles">—</strong></div>
         <div><span>Detracción en dólares</span><strong id="resultado-dolares">—</strong></div>
         <div><span id="resultado-neto-etiqueta">Neto por pagar</span><strong id="resultado-neto">—</strong></div>
@@ -108,18 +103,18 @@ require __DIR__ . '/layout_inicio.php';
         const importe = document.getElementById('detraccion-importe');
         const referencial = document.getElementById('detraccion-referencial');
         const tipoCambio = document.getElementById('detraccion-tipo-cambio');
-        const base = document.getElementById('detraccion-base');
         const chofer = document.getElementById('detraccion-chofer');
         const redondeo = document.getElementById('detraccion-redondeo');
         const mensaje = document.getElementById('detraccion-mensaje');
         const facturaResultado = document.getElementById('resultado-factura');
+        const baseResultado = document.getElementById('resultado-base');
         const solesResultado = document.getElementById('resultado-soles');
         const dolaresResultado = document.getElementById('resultado-dolares');
         const netoResultado = document.getElementById('resultado-neto');
         const netoEtiqueta = document.getElementById('resultado-neto-etiqueta');
 
         const limpiarResultados = () => {
-            [facturaResultado, solesResultado, dolaresResultado, netoResultado].forEach(elemento => { elemento.textContent = '—'; });
+            [facturaResultado, baseResultado, solesResultado, dolaresResultado, netoResultado].forEach(elemento => { elemento.textContent = '—'; });
             netoEtiqueta.textContent = 'Neto por pagar';
             mensaje.textContent = '';
             mensaje.classList.remove('detraccion-error');
@@ -153,12 +148,8 @@ require __DIR__ . '/layout_inicio.php';
                 error('Ingresa un importe de factura válido, con hasta dos decimales.');
                 return;
             }
-            if (!base.value) {
-                error('Selecciona la base de cálculo.');
-                return;
-            }
             const valorReferencial = referencial.value === '' ? null : unidades(referencial.value, 2, 10);
-            if ((referencial.value !== '' && valorReferencial === null) || (base.value === 'referencial' && valorReferencial === null)) {
+            if (referencial.value !== '' && valorReferencial === null) {
                 error('Ingresa un valor referencial válido en soles, con hasta dos decimales.');
                 return;
             }
@@ -181,7 +172,7 @@ require __DIR__ . '/layout_inicio.php';
             }
 
             const facturaSoles = moneda.value === 'USD' ? dividirRedondeado(importeCentimos * cambio, 1000n) : importeCentimos;
-            const baseSoles = base.value === 'referencial' ? valorReferencial : facturaSoles;
+            const baseSoles = valorReferencial !== null && valorReferencial > facturaSoles ? valorReferencial : facturaSoles;
             const aplica = baseSoles >= 40000n;
             const detraccionSoles = !aplica ? 0n : redondeo.value === 'entero'
                 ? dividirRedondeado(baseSoles * 4n, 10000n) * 100n
@@ -190,16 +181,22 @@ require __DIR__ . '/layout_inicio.php';
             const neto = moneda.value === 'USD' ? importeCentimos - detraccionDolares : importeCentimos - detraccionSoles;
 
             facturaResultado.textContent = mostrarImporte(facturaSoles, 'S/');
+            baseResultado.textContent = mostrarImporte(baseSoles, 'S/');
             solesResultado.textContent = mostrarImporte(detraccionSoles, 'S/');
             dolaresResultado.textContent = detraccionDolares === null ? 'Ingresa tipo de cambio' : mostrarImporte(detraccionDolares, 'US$');
             netoEtiqueta.textContent = moneda.value === 'USD' ? 'Neto por pagar (US$)' : 'Neto por pagar (S/)';
             netoResultado.textContent = mostrarImporte(neto, moneda.value === 'USD' ? 'US$' : 'S/');
             if (neto < 0n) {
-                error('La detracción supera el importe de la factura. Verifica la base seleccionada con la contadora.');
+                error('La detracción supera el importe de la factura. Verifica los datos con la contadora.');
             } else if (baseSoles === 40000n) {
                 error('Se aplicó el 4 % a S/ 400 exactos según la regla indicada. La SUNAT señala un importe mayor a S/ 400; confirma antes de realizar el depósito.');
             } else {
-                mensaje.textContent = aplica ? 'Se aplicó el 4 % sobre la base seleccionada.' : 'La base seleccionada es menor a S/ 400; no se aplicó detracción.';
+                const origen = valorReferencial === null
+                    ? 'No se ingresó valor referencial; se usó la factura.'
+                    : baseSoles === valorReferencial && valorReferencial > facturaSoles
+                        ? 'Se usó el valor referencial por ser mayor que la factura.'
+                        : 'Se usó la factura por ser mayor o igual al valor referencial.';
+                mensaje.textContent = (aplica ? 'Se aplicó el 4 %. ' : 'La base es menor a S/ 400; no se aplicó detracción. ') + origen;
             }
         });
         document.getElementById('detraccion-calcular').disabled = false;
