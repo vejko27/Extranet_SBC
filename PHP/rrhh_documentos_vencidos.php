@@ -44,6 +44,7 @@ $hoy = new DateTimeImmutable('today', new DateTimeZone('America/Lima'));
 $conteos = ['vigente' => 0, 'sin-vencimiento' => 0, 'por-vencer' => 0, 'vencido' => 0, 'sin-fecha' => 0, 'revisar' => 0];
 $trabajadores = [];
 $unidades = [];
+$documentosPorTrabajador = [];
 
 foreach ($filas as &$fila) {
     $fila['nombre'] = trim(implode(' ', array_filter([
@@ -81,6 +82,7 @@ foreach ($filas as &$fila) {
     $conteos[$fila['estado_key']]++;
     $trabajadores[(int)$fila['personal_id']] = $fila['nombre'];
     $unidades[$fila['unidad']] = $fila['unidad'];
+    $documentosPorTrabajador[(int)$fila['personal_id']][] = $fila;
 }
 unset($fila);
 asort($trabajadores, SORT_NATURAL | SORT_FLAG_CASE);
@@ -132,11 +134,17 @@ require __DIR__ . '/layout_inicio.php';
         <button type="button" class="btn-sec" id="alternar-colores-documentos" aria-pressed="true" title="Activar o desactivar los colores de estado">Color</button>
     </div>
     <p class="contratos-contador" id="contador-documentos" aria-live="polite"></p>
-    <div class="tabla-wrap contratos-tabla-wrap">
-        <table class="contratos-tabla" id="tabla-documentos-vencidos">
+    <div id="tabla-documentos-vencidos">
+        <?php foreach ($documentosPorTrabajador as $personalId => $documentos): ?>
+        <section class="documentos-grupo" aria-labelledby="trabajador-<?= $personalId ?>">
+            <div class="documentos-grupo-trabajador">
+                <span>Trabajador</span>
+                <a id="trabajador-<?= $personalId ?>" href="rrhh_ficha.php?id=<?= $personalId ?>&amp;modo=ver"><?= e($documentos[0]['nombre'] ?: 'Sin nombre') ?></a>
+            </div>
+            <div class="tabla-wrap contratos-tabla-wrap">
+        <table class="contratos-tabla">
             <thead>
                 <tr>
-                    <th>Trabajador</th>
                     <th>Unidad</th>
                     <th>Flota</th>
                     <th>Fecha de inicio</th>
@@ -147,7 +155,7 @@ require __DIR__ . '/layout_inicio.php';
                 </tr>
             </thead>
             <tbody>
-                <?php foreach ($filas as $fila):
+                <?php foreach ($documentos as $fila):
                     $fechaInicio = $fila['fecha_inicio_obj']?->format('d/m/Y') ?? '—';
                     $fechaVencimiento = !empty($fila['sin_vencimiento'])
                         ? 'NO CADUCA'
@@ -158,7 +166,6 @@ require __DIR__ . '/layout_inicio.php';
                     data-trabajador="<?= (int)$fila['personal_id'] ?>"
                     data-unidad="<?= e($fila['unidad']) ?>"
                     data-estado="<?= e($fila['estado_key']) ?>">
-                    <td data-label="Trabajador"><a href="rrhh_ficha.php?id=<?= (int)$fila['personal_id'] ?>&amp;modo=ver"><?= e($fila['nombre'] ?: 'Sin nombre') ?></a></td>
                     <td data-label="Unidad"><a href="rrhh_documentos.php?id=<?= (int)$fila['personal_id'] ?>&amp;tipo=<?= urlencode($fila['unidad']) ?>"><?= e($fila['unidad']) ?></a></td>
                     <td data-label="Flota"><?= e($fila['flota'] ?: '—') ?></td>
                     <td data-label="Fecha de inicio"><?= e($fechaInicio) ?></td>
@@ -172,11 +179,12 @@ require __DIR__ . '/layout_inicio.php';
                     </td>
                 </tr>
                 <?php endforeach; ?>
-                <tr id="documentos-sin-resultados" <?= $filas ? 'hidden' : '' ?>>
-                    <td colspan="8"><?= $filas ? 'No se encontraron documentos con esos filtros.' : 'No hay documentos registrados.' ?></td>
-                </tr>
             </tbody>
         </table>
+            </div>
+        </section>
+        <?php endforeach; ?>
+        <p id="documentos-sin-resultados" <?= $filas ? 'hidden' : '' ?>><?= $filas ? 'No se encontraron documentos con esos filtros.' : 'No hay documentos registrados.' ?></p>
     </div>
 </div>
 
@@ -184,6 +192,7 @@ require __DIR__ . '/layout_inicio.php';
     (() => {
         const tabla = document.getElementById("tabla-documentos-vencidos");
         const filas = Array.from(tabla.querySelectorAll(".contratos-fila"));
+        const grupos = Array.from(tabla.querySelectorAll(".documentos-grupo"));
         const trabajador = document.getElementById("filtro-trabajador");
         const unidad = document.getElementById("filtro-unidad");
         const proximos = document.getElementById("filtrar-documentos-proximos");
@@ -201,8 +210,11 @@ require __DIR__ . '/layout_inicio.php';
                 fila.hidden = !coincideTrabajador || !coincideUnidad || !coincideEstado;
                 if (!fila.hidden) visibles++;
             });
+            grupos.forEach((grupo) => {
+                grupo.hidden = !Array.from(grupo.querySelectorAll(".contratos-fila")).some((fila) => !fila.hidden);
+            });
             sinResultados.hidden = visibles > 0;
-            sinResultados.firstElementChild.textContent = filas.length === 0
+            sinResultados.textContent = filas.length === 0
                 ? "No hay documentos registrados."
                 : "No se encontraron documentos con esos filtros.";
             contador.textContent = `Mostrando ${visibles} de ${filas.length} documentos`;
@@ -219,7 +231,9 @@ require __DIR__ . '/layout_inicio.php';
         colores.addEventListener("click", () => {
             const activar = colores.getAttribute("aria-pressed") !== "true";
             colores.setAttribute("aria-pressed", String(activar));
-            tabla.classList.toggle("sin-colores", !activar);
+            tabla.querySelectorAll(".contratos-tabla").forEach((elemento) => {
+                elemento.classList.toggle("sin-colores", !activar);
+            });
         });
         actualizar();
     })();
