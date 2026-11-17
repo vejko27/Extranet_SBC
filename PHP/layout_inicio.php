@@ -16,7 +16,7 @@ $veDetraccion = puede('Cálculo de detracción', 'ver');
 $veTractos = puede('Tractos', 'ver');
 $veCarretas = puede('Carretas', 'ver');
 $veFlota = $veTractos || $veCarretas;
-$flotaActiva = in_array($paginaActiva, ['tractos', 'carretas', 'lavados', 'mantenimiento_tractos'], true);
+$flotaActiva = in_array($paginaActiva, ['flota_inicio', 'tractos', 'carretas', 'lavados', 'mantenimiento_tractos'], true);
 $rrhhActivo = in_array($paginaActiva, ['rrhh', 'rrhh_contratos', 'rrhh_documentos_vencidos', 'rrhh_boletas'], true);
 // Lista de manuales y manual activo (solo en la página de manuales)
 $listarFormatos = false;
@@ -80,7 +80,7 @@ $formatoActivo = $paginaActiva === 'formatos_procedimientos' && isset($_GET['m']
                 <a href="calculo_detraccion.php" data-short="CD" title="Cálculo de detracción" class="<?= $paginaActiva === 'calculo_detraccion' ? 'activo' : '' ?>">Cálculo de detracción</a>
             <?php endif; ?>
             <?php if ($veFlota): ?>
-                <button type="button" class="grupo-titulo grupo-toggle" id="toggle-tractos-carretas" data-short="TC" title="Inventario de tractos y carretas" aria-expanded="true" aria-controls="submenu-tractos-carretas">
+                <button type="button" class="grupo-titulo grupo-toggle<?= $flotaActiva ? ' activo' : '' ?>" id="toggle-tractos-carretas" data-short="TC" title="Inventario de tractos y carretas" aria-expanded="true" aria-controls="submenu-tractos-carretas">
                     <span class="grupo-nombre">Tractos y Carretas</span><span class="flecha" aria-hidden="true">▾</span>
                 </button>
                 <div class="submenu" id="submenu-tractos-carretas">

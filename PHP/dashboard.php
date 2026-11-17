@@ -29,7 +29,7 @@ if ($veRRHH)        $tarjetas[] = ['rrhh.php', 'Recursos Humanos', 'Fichas de da
 </div>
 
 <?php /* Cuadrícula de tarjetas o mensaje si no hay módulos asignados */ ?>
-<?php if ($tarjetas): ?>
+<?php if ($tarjetas || $veTractos || $veCarretas): ?>
 <div class="grid">
     <?php foreach ($tarjetas as [$url, $titulo, $desc]): ?>
     <a class="tarjeta-acceso" href="<?= $url ?>">
@@ -37,6 +37,12 @@ if ($veRRHH)        $tarjetas[] = ['rrhh.php', 'Recursos Humanos', 'Fichas de da
         <p><?= htmlspecialchars($desc) ?></p>
     </a>
     <?php endforeach; ?>
+    <?php if ($veTractos || $veCarretas): ?>
+    <a class="tarjeta-acceso" href="flota_inicio.php">
+        <h3>Tractos y Carretas</h3>
+        <p>Accede a los módulos de flota disponibles para tu usuario.</p>
+    </a>
+    <?php endif; ?>
 </div>
 <?php else: ?>
 <div class="card"><p>Has iniciado sesión correctamente. Aún no tienes módulos asignados.</p></div>
