@@ -286,7 +286,7 @@ require __DIR__ . '/layout_inicio.php';
                                 ];
                             }
                         ?>
-                        <td>
+                        <td data-label="<?= programacionEscapar($dia['nombre'] . ' ' . $dia['fecha_corta']) ?>">
                             <?php if ($puedeAdministrar): ?>
                             <label class="sr-only" for="carreta-<?= (int)$tracto['id'] ?>-<?= programacionEscapar($dia['fecha']) ?>">Carreta para <?= programacionEscapar($tracto['placa']) ?> el <?= programacionEscapar($dia['nombre']) ?></label>
                             <select id="carreta-<?= (int)$tracto['id'] ?>-<?= programacionEscapar($dia['fecha']) ?>" name="asignacion[<?= (int)$tracto['id'] ?>][<?= programacionEscapar($dia['fecha']) ?>]"<?= $error === '' ? ' disabled' : '' ?>>
