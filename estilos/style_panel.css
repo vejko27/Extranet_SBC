@@ -344,6 +344,11 @@ dialog input, dialog select { width: 100%; }
 .datos-ver-prov { display: grid; grid-template-columns: minmax(105px, .9fr) minmax(0, 1.4fr); gap: 10px 12px; margin: 0; }
 .datos-ver-prov dt { color: #64748b; font-size: 12px; font-weight: 600; }
 .datos-ver-prov dd { margin: 0; color: #0f172a; font-size: 13px; font-weight: 600; overflow-wrap: anywhere; }
+.vista-prov-cuentas { display: grid; gap: 10px; }
+.vista-prov-cuenta { padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; }
+.vista-prov-cuenta h4 { margin: 0 0 10px; color: #334155; font-size: 12px; }
+.vista-prov-cuenta .datos-ver-prov { gap: 8px 10px; }
+.vista-prov-sin-cuentas { color: #64748b; font-size: 13px; }
 .modal-acciones { display: flex; justify-content: flex-end; gap: 10px; margin-top: 8px; }
 dialog { max-height: 92vh; overflow-y: auto; }
 

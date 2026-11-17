@@ -651,22 +651,42 @@ require __DIR__ . '/layout_inicio.php';
         },
         {
             seccion: "Información bancaria",
-            campos: [
-                ["Entidad bancaria", "banco"],
-                ["Número de cuenta", "numero_cuenta"],
-                ["CCI", "cci"],
-                ["Banco 2", "banco2"],
-                ["Número de cuenta 2", "numero_cuenta2"],
-                ["CCI 2", "cci2"],
-                ["Banco 3", "banco3"],
-                ["Número de cuenta 3", "numero_cuenta3"],
-                ["CCI 3", "cci3"],
-                ["Monedas de la cuenta principal", "moneda_cuenta"],
-                ["Monedas de la cuenta adicional 1", "moneda_cuenta2"],
-                ["Monedas de la cuenta adicional 2", "moneda_cuenta3"],
-                ["Banco de detracciones", "banco_detracciones"],
-                ["Cuenta de detracciones", "cuenta_detracciones"],
-                ["Monedas de la cuenta de detracciones", "moneda_detracciones"],
+            cuentas: [
+                {
+                    titulo: "Cuenta principal",
+                    campos: [
+                        ["Entidad bancaria", "banco"],
+                        ["Moneda", "moneda_cuenta"],
+                        ["Número de cuenta", "numero_cuenta"],
+                        ["CCI", "cci"],
+                    ],
+                },
+                {
+                    titulo: "Cuenta adicional 1",
+                    campos: [
+                        ["Entidad bancaria", "banco2"],
+                        ["Moneda", "moneda_cuenta2"],
+                        ["Número de cuenta", "numero_cuenta2"],
+                        ["CCI", "cci2"],
+                    ],
+                },
+                {
+                    titulo: "Cuenta adicional 2",
+                    campos: [
+                        ["Entidad bancaria", "banco3"],
+                        ["Moneda", "moneda_cuenta3"],
+                        ["Número de cuenta", "numero_cuenta3"],
+                        ["CCI", "cci3"],
+                    ],
+                },
+                {
+                    titulo: "Cuenta de detracciones",
+                    campos: [
+                        ["Entidad bancaria", "banco_detracciones"],
+                        ["Moneda", "moneda_detracciones"],
+                        ["Número de cuenta", "cuenta_detracciones"],
+                    ],
+                },
             ],
         },
         {
@@ -689,6 +709,31 @@ require __DIR__ . '/layout_inicio.php';
             ],
         },
     ];
+    function textoCampoProveedor(proveedor, campo) {
+        let texto = proveedor[campo] || "";
+        if (campo.startsWith("moneda_") && texto) {
+            texto = texto.split(",").map((moneda) => ({
+                USD: "$ Dólares",
+                PEN: "S/. Soles",
+            }[moneda] || moneda)).join(" · ");
+        }
+        if (["creado", "actualizado"].includes(campo) && proveedor[campo]) {
+            const fecha = proveedor[campo].match(/^(\d{4})-(\d{2})-(\d{2})(?:\s+(\d{2}):(\d{2})(?::\d{2})?)?$/);
+            if (fecha) {
+                texto = `${fecha[3]}/${fecha[2]}/${fecha[1]}${fecha[4] ? ` ${fecha[4]}:${fecha[5]}` : ""}`;
+            }
+        }
+        return texto || "Sin registrar";
+    }
+    function agregarCamposProveedor(datos, campos, proveedor) {
+        campos.forEach(([etiqueta, campo]) => {
+            const titulo = document.createElement("dt");
+            titulo.textContent = etiqueta;
+            const valor = document.createElement("dd");
+            valor.textContent = textoCampoProveedor(proveedor, campo);
+            datos.append(titulo, valor);
+        });
+    }
     document.querySelectorAll(".btn-ver-proveedor").forEach((boton) => {
         boton.addEventListener("click", () => {
             const proveedor = JSON.parse(boton.dataset.p);
@@ -698,31 +743,39 @@ require __DIR__ . '/layout_inicio.php';
             const estado = document.getElementById("estado-ver-prov");
             estado.textContent = proveedor.status || "Sin estado";
             estado.className = "vista-prov-estado" + (proveedor.status === "HOMOLOGADO" ? " homologado" : " pendiente");
-            camposVistaProveedor.forEach(({ seccion, campos }) => {
+            camposVistaProveedor.forEach(({ seccion, campos, cuentas }) => {
                 const bloque = document.createElement("section");
                 bloque.className = "vista-prov-seccion";
                 const encabezado = document.createElement("h3");
                 encabezado.textContent = seccion;
-                const datos = document.createElement("dl");
-                datos.className = "datos-ver-prov";
-                campos.forEach(([etiqueta, campo]) => {
-                    const titulo = document.createElement("dt");
-                    titulo.textContent = etiqueta;
-                    const valor = document.createElement("dd");
-                    let texto = proveedor[campo] || "Sin registrar";
-                    if (campo.startsWith("moneda_") && proveedor[campo]) {
-                        texto = proveedor[campo].split(",").map((moneda) => moneda === "USD" ? "$ Dólares" : "S/. Soles").join(" · ");
+                if (cuentas) {
+                    const listaCuentas = document.createElement("div");
+                    listaCuentas.className = "vista-prov-cuentas";
+                    cuentas.forEach(({ titulo, campos: camposCuenta }) => {
+                        if (!camposCuenta.some(([, campo]) => proveedor[campo])) return;
+                        const cuenta = document.createElement("div");
+                        cuenta.className = "vista-prov-cuenta";
+                        const tituloCuenta = document.createElement("h4");
+                        tituloCuenta.textContent = titulo;
+                        const datosCuenta = document.createElement("dl");
+                        datosCuenta.className = "datos-ver-prov";
+                        agregarCamposProveedor(datosCuenta, camposCuenta, proveedor);
+                        cuenta.append(tituloCuenta, datosCuenta);
+                        listaCuentas.append(cuenta);
+                    });
+                    if (!listaCuentas.childElementCount) {
+                        const vacio = document.createElement("p");
+                        vacio.className = "vista-prov-sin-cuentas";
+                        vacio.textContent = "No hay cuentas bancarias registradas.";
+                        listaCuentas.append(vacio);
                     }
-                    if (["creado", "actualizado"].includes(campo) && proveedor[campo]) {
-                        const fecha = proveedor[campo].match(/^(\d{4})-(\d{2})-(\d{2})(?:\s+(\d{2}):(\d{2})(?::\d{2})?)?$/);
-                        if (fecha) {
-                            texto = `${fecha[3]}/${fecha[2]}/${fecha[1]}${fecha[4] ? ` ${fecha[4]}:${fecha[5]}` : ""}`;
-                        }
-                    }
-                    valor.textContent = texto;
-                    datos.append(titulo, valor);
-                });
-                bloque.append(encabezado, datos);
+                    bloque.append(encabezado, listaCuentas);
+                } else {
+                    const datos = document.createElement("dl");
+                    datos.className = "datos-ver-prov";
+                    agregarCamposProveedor(datos, campos, proveedor);
+                    bloque.append(encabezado, datos);
+                }
                 lista.append(bloque);
             });
             modalVerProveedor.showModal();
