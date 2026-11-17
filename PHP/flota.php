@@ -163,7 +163,7 @@ require __DIR__ . '/layout_inicio.php';
 <div class="card">
     <h2><?= flotaEscapar($tituloPagina) ?></h2>
     <div class="tabla-wrap">
-        <table>
+        <table class="flota-tabla">
             <tr><th>ID</th><?php if ($nombreRequerido): ?><th>Nombre</th><?php endif; ?><th>Placa</th><th>Última actualización</th><th>Acciones</th></tr>
             <?php foreach ($unidades as $unidad): ?>
             <tr>

@@ -439,6 +439,8 @@ dialog { max-height: 92vh; overflow-y: auto; }
 
 @media (max-width: 480px) {
     .manuales-cabecera { flex-direction: column; align-items: flex-start; }
+    .flota-tabla td:not(.celda-acciones) { flex-direction: column; align-items: flex-start; text-align: left; }
+    .flota-tabla td::before { flex-shrink: 1; }
     dialog { padding: 20px; }
     .modal-acciones { flex-direction: column-reverse; }
     .modal-acciones button { width: 100%; }
@@ -449,6 +451,18 @@ dialog { max-height: 92vh; overflow-y: auto; }
     .form-prov-secciones, .form-prov-columna, .form-prov-grid { grid-template-columns: 1fr; }
     .form-prov-secciones { max-height: 62vh; }
     .form-prov-grid .form-prov-ancho { grid-column: auto; }
+}
+
+@media (min-width: 801px) and (max-width: 1100px) {
+    .flota-tabla, .flota-tabla tbody, .flota-tabla tr, .flota-tabla td { display: block; width: 100%; }
+    .flota-tabla tr:first-child { display: none; }
+    .flota-tabla tr { border: 1px solid #e2e8f0; border-radius: 10px; margin-bottom: 14px; padding: 6px 0; }
+    .flota-tabla td { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 9px 14px; text-align: right; overflow-wrap: anywhere; }
+    .flota-tabla td::before { content: attr(data-label); font-weight: 600; color: #475569; text-align: left; }
+    .flota-tabla td:last-child { border-bottom: 0; }
+    .flota-tabla td.celda-acciones { justify-content: flex-end; flex-wrap: wrap; white-space: normal; gap: 6px; }
+    .flota-tabla td.celda-acciones::before { display: none; }
+    .flota-tabla td.celda-acciones .form-inline { margin: 0; }
 }
 
 @media (max-width: 1100px) {
@@ -498,7 +512,8 @@ dialog { max-height: 92vh; overflow-y: auto; }
     .sidebar-colapsar::before { content: "☰ Menú"; font-size: 14px; white-space: nowrap; }
     .sidebar-movil-abierto .sidebar-colapsar::before { content: "× Cerrar menú"; font-size: 14px; }
     html.sidebar-colapsado .sidebar nav { display: none; margin-top: 10px; padding-top: 8px; }
-    .sidebar-movil-abierto .sidebar nav { display: flex; flex-direction: column; gap: 2px; }
+    .sidebar-movil-abierto .sidebar { max-height: 100vh; max-height: 100dvh; }
+    html.sidebar-movil-abierto .sidebar nav { display: flex; flex: 1 1 auto; flex-direction: column; min-height: 0; overflow-y: auto; overscroll-behavior: contain; gap: 2px; }
     html.sidebar-colapsado .sidebar nav > a,
     html.sidebar-colapsado .sidebar > a.salir { padding: 11px 12px; font-size: 14px; text-align: left; }
     html.sidebar-colapsado .sidebar nav > a::before,

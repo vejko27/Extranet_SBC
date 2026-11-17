@@ -154,7 +154,7 @@ require __DIR__ . '/layout_inicio.php';
 <div class="card">
     <h2>Tractos</h2>
     <div class="tabla-wrap">
-        <table>
+        <table class="flota-tabla">
             <tr><th>ID del tracto</th><th>Tracto</th><th>Fecha del último lavado</th><th>Acciones</th></tr>
             <?php foreach ($tractos as $fila): ?>
             <tr>
@@ -174,7 +174,7 @@ require __DIR__ . '/layout_inicio.php';
     <h2>Historial: <?= lavadoEscapar($tracto['nombre'] . ' (' . $tracto['placa'] . ')') ?></h2>
     <?php if (!$historial): ?><p>Aún no hay lavados registrados para este tracto.</p><?php else: ?>
     <div class="tabla-wrap">
-        <table>
+        <table class="flota-tabla">
             <tr><th>Fecha de lavado</th><th>PDF</th><th>XML</th><th>Acciones</th></tr>
             <?php foreach ($historial as $fila): ?>
             <tr>
