@@ -50,18 +50,26 @@ if (!$persona) {
     exit('Persona no encontrada');
 }
 $s = $conexion->prepare("SELECT id, tipo_contrato, contrato_inicio, contrato_fin, periodo_inicio
-    FROM personal_contratos WHERE personal_id = ? ORDER BY id DESC LIMIT 1");
+    FROM personal_contratos
+    WHERE personal_id = ?
+    ORDER BY
+        (contrato_inicio IS NULL OR contrato_inicio = '0000-00-00'),
+        contrato_inicio DESC,
+        id DESC
+    LIMIT 1");
 $s->bind_param('i', $pid);
 $s->execute();
-$contratoOrigen = $s->get_result()->fetch_assoc();
-if (!$contratoOrigen) {
-    $contratoOrigen = [
-        'tipo_contrato' => $persona['tipo_contrato'],
-        'contrato_inicio' => $persona['contrato_inicio'],
-        'contrato_fin' => $persona['contrato_fin'],
-        'periodo_inicio' => $persona['periodo_inicio'],
-    ];
-}
+$contratoAdicional = $s->get_result()->fetch_assoc();
+$contratoPrincipal = [
+    'tipo_contrato' => $persona['tipo_contrato'],
+    'contrato_inicio' => $persona['contrato_inicio'],
+    'contrato_fin' => $persona['contrato_fin'],
+    'periodo_inicio' => $persona['periodo_inicio'],
+];
+$contratoOrigen = $contratoAdicional
+    && contratoAdicionalEsMasActualizado($contratoPrincipal['contrato_inicio'], $contratoAdicional['contrato_inicio'])
+    ? $contratoAdicional
+    : $contratoPrincipal;
 $fechaInicioContrato = (string)($contratoOrigen['contrato_inicio'] ?? '');
 $fechaFinContrato = (string)($contratoOrigen['contrato_fin'] ?? '');
 $periodoInicioContrato = (string)($contratoOrigen['periodo_inicio'] ?? '');
@@ -241,18 +249,14 @@ foreach ($docs as &$doc) {
     if ($sinFechaVencimiento) {
         $doc['fecha_vencimiento'] = '';
     }
-    if ($doc['tipo'] === 'DNI' && $sinFechaVencimiento && empty($doc['sin_vencimiento'])) {
+    if ($doc['tipo'] === 'DNI' && $fechaVencimientoDocumento !== '') {
         $doc['fecha_vencimiento'] = $fechaVencimientoDocumento;
+        $doc['sin_vencimiento'] = 0;
     } elseif ($doc['tipo'] === 'Contrato') {
-        if ($sinFechaInicio) {
+        if ($contratoTieneDatos) {
             $doc['fecha_inicio'] = $fechaInicioContrato;
-        }
-        if ($sinFechaVencimiento && empty($doc['sin_vencimiento'])) {
-            if ($fechaFinContrato !== '') {
-                $doc['fecha_vencimiento'] = $fechaFinContrato;
-            } elseif ($contratoTieneDatos) {
-                $doc['sin_vencimiento'] = 1;
-            }
+            $doc['fecha_vencimiento'] = $fechaFinContrato;
+            $doc['sin_vencimiento'] = $fechaFinContrato === '' ? 1 : 0;
         }
     }
 }

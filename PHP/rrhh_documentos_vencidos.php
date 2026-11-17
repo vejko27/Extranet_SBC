@@ -44,7 +44,14 @@ $consulta = $conexion->query("
     FROM personal_documentos d
     INNER JOIN personal p ON p.id = d.personal_id
     LEFT JOIN personal_contratos pc ON pc.id = (
-        SELECT MAX(pc_actual.id) FROM personal_contratos pc_actual WHERE pc_actual.personal_id = p.id
+        SELECT pc_actual.id
+        FROM personal_contratos pc_actual
+        WHERE pc_actual.personal_id = p.id
+        ORDER BY
+            (pc_actual.contrato_inicio IS NULL OR pc_actual.contrato_inicio = '0000-00-00'),
+            pc_actual.contrato_inicio DESC,
+            pc_actual.id DESC
+        LIMIT 1
     )
     ORDER BY p.apellido_paterno, p.apellido_materno, p.nombres, d.tipo, d.id
 ");
@@ -70,23 +77,27 @@ foreach ($filas as &$fila) {
     $fechaInicioRaw = fechaDocumentoDisponible($fila['fecha_inicio'] ?? '');
     $fechaVencimientoRaw = fechaDocumentoDisponible($fila['fecha_vencimiento'] ?? '');
     if ($fila['unidad'] === 'Contrato') {
-        $usaContratoTabla = !empty($fila['contrato_tabla_id']);
+        $usaContratoTabla = !empty($fila['contrato_tabla_id'])
+            && contratoAdicionalEsMasActualizado(
+                $fila['personal_contrato_inicio'],
+                $fila['tabla_contrato_inicio']
+            );
         $tipoContrato = (string)($usaContratoTabla ? $fila['tabla_tipo_contrato'] : $fila['personal_tipo_contrato']);
         $fechaInicioContrato = fechaDocumentoDisponible($usaContratoTabla ? $fila['tabla_contrato_inicio'] : $fila['personal_contrato_inicio']);
         $fechaFinContrato = fechaDocumentoDisponible($usaContratoTabla ? $fila['tabla_contrato_fin'] : $fila['personal_contrato_fin']);
         $periodoInicioContrato = fechaDocumentoDisponible($usaContratoTabla ? $fila['tabla_periodo_inicio'] : $fila['personal_periodo_inicio']);
         $contratoTieneDatos = trim($tipoContrato) !== '' || $fechaInicioContrato !== '' || $fechaFinContrato !== '' || $periodoInicioContrato !== '';
-        if ($fechaInicioRaw === '') {
+        if ($contratoTieneDatos) {
             $fechaInicioRaw = $fechaInicioContrato;
-        }
-        if ($fechaVencimientoRaw === '' && empty($fila['sin_vencimiento'])) {
             $fechaVencimientoRaw = $fechaFinContrato;
-            if ($fechaVencimientoRaw === '' && $contratoTieneDatos) {
-                $fila['sin_vencimiento'] = 1;
-            }
+            $fila['sin_vencimiento'] = $fechaFinContrato === '' ? 1 : 0;
         }
-    } elseif ($fila['unidad'] === 'DNI' && $fechaVencimientoRaw === '' && empty($fila['sin_vencimiento'])) {
-        $fechaVencimientoRaw = fechaDocumentoDisponible($fila['fecha_vencimiento_doc'] ?? '');
+    } elseif ($fila['unidad'] === 'DNI') {
+        $fechaVencimientoPersonal = fechaDocumentoDisponible($fila['fecha_vencimiento_doc'] ?? '');
+        if ($fechaVencimientoPersonal !== '') {
+            $fechaVencimientoRaw = $fechaVencimientoPersonal;
+            $fila['sin_vencimiento'] = 0;
+        }
     }
     $fila['fecha_inicio_obj'] = fechaDocumento($fechaInicioRaw);
     $fila['fecha_vencimiento_obj'] = fechaDocumento($fechaVencimientoRaw);

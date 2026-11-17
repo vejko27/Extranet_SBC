@@ -75,6 +75,19 @@ function camposExtraPlano(array $secciones): array
     return $o;
 }
 
+function contratoAdicionalEsMasActualizado($fechaPrincipal, $fechaAdicional): bool
+{
+    $fechaPrincipal = trim((string)$fechaPrincipal);
+    $fechaAdicional = trim((string)$fechaAdicional);
+    if (in_array($fechaPrincipal, ['', '0000-00-00'], true)) {
+        $fechaPrincipal = '';
+    }
+    if (in_array($fechaAdicional, ['', '0000-00-00'], true)) {
+        $fechaAdicional = '';
+    }
+    return $fechaAdicional >= $fechaPrincipal;
+}
+
 // Crea en `personal` las columnas que falten (idempotente)
 function garantizarColumnasExtra(mysqli $conexion, array $secciones): void
 {

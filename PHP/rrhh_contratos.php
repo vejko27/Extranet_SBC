@@ -31,7 +31,13 @@ $consulta = $conexion->query("
            p.contrato_fin AS fecha_fin, p.periodo_inicio, 0 AS orden_contrato
     FROM personal p
     WHERE NOT EXISTS (
-        SELECT 1 FROM personal_contratos pc WHERE pc.personal_id = p.id
+        SELECT 1
+        FROM personal_contratos pc
+        WHERE pc.personal_id = p.id
+          AND (
+              COALESCE(NULLIF(pc.contrato_inicio, '0000-00-00'), '0000-00-00')
+                  >= COALESCE(NULLIF(p.contrato_inicio, '0000-00-00'), '0000-00-00')
+          )
     )
     UNION ALL
     SELECT p.id AS personal_id, p.apellido_paterno, p.apellido_materno, p.nombres,
@@ -44,14 +50,19 @@ $consulta = $conexion->query("
         FROM personal_contratos pc_reciente
         WHERE pc_reciente.personal_id = pc.personal_id
           AND (
-              pc_reciente.contrato_inicio > pc.contrato_inicio
-              OR (pc.contrato_inicio IS NULL AND pc_reciente.contrato_inicio IS NOT NULL)
+              COALESCE(NULLIF(pc_reciente.contrato_inicio, '0000-00-00'), '0000-00-00')
+                  > COALESCE(NULLIF(pc.contrato_inicio, '0000-00-00'), '0000-00-00')
               OR (
-                  pc_reciente.contrato_inicio <=> pc.contrato_inicio
+                  COALESCE(NULLIF(pc_reciente.contrato_inicio, '0000-00-00'), '0000-00-00')
+                      = COALESCE(NULLIF(pc.contrato_inicio, '0000-00-00'), '0000-00-00')
                   AND pc_reciente.id > pc.id
               )
           )
     )
+      AND NOT (
+          COALESCE(NULLIF(p.contrato_inicio, '0000-00-00'), '0000-00-00')
+              > COALESCE(NULLIF(pc.contrato_inicio, '0000-00-00'), '0000-00-00')
+      )
     ORDER BY apellido_paterno, apellido_materno, nombres, orden_contrato
 ");
 if (!$consulta) {
