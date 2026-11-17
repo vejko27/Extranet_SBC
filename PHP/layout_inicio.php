@@ -16,7 +16,7 @@ $veDetraccion = puede('Cálculo de detracción', 'ver');
 $veTractos = puede('Tractos', 'ver');
 $veCarretas = puede('Carretas', 'ver');
 $veFlota = $veTractos || $veCarretas;
-$flotaActiva = in_array($paginaActiva, ['flota_inicio', 'tractos', 'carretas', 'lavados', 'mantenimiento_tractos'], true);
+$flotaActiva = in_array($paginaActiva, ['flota_inicio', 'tractos', 'carretas', 'lavados', 'mantenimiento_tractos', 'programacion_flota'], true);
 $rrhhActivo = in_array($paginaActiva, ['rrhh', 'rrhh_contratos', 'rrhh_documentos_vencidos', 'rrhh_boletas'], true);
 // Lista de manuales y manual activo (solo en la página de manuales)
 $listarFormatos = false;
@@ -91,6 +91,9 @@ $formatoActivo = $paginaActiva === 'formatos_procedimientos' && isset($_GET['m']
                     <?php endif; ?>
                     <?php if ($veCarretas): ?>
                         <a href="flota.php?tipo=carretas" class="sub<?= $paginaActiva === 'carretas' ? ' activo' : '' ?>">Carretas</a>
+                    <?php endif; ?>
+                    <?php if ($veTractos && $veCarretas): ?>
+                        <a href="programacion_flota.php" class="sub<?= $paginaActiva === 'programacion_flota' ? ' activo' : '' ?>">Programación semanal</a>
                     <?php endif; ?>
                 </div>
                 <script>

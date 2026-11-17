@@ -21,6 +21,9 @@ if ($veTractos) {
 if ($veCarretas) {
     $modulosFlota[] = ['flota.php?tipo=carretas', 'Carretas', 'Consulta y actualiza el inventario de carretas.'];
 }
+if ($veTractos && $veCarretas) {
+    $modulosFlota[] = ['programacion_flota.php', 'Programación semanal', 'Asigna carretas a tractos y consulta las semanas anteriores.'];
+}
 ?>
 
 <div class="cabecera-marca">
