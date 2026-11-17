@@ -31,7 +31,7 @@ if (empty($_SESSION['csrf'])) {
 // Escapa texto para imprimirlo de forma segura en HTML
 function e($v) { return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
 
-function normalizarMonedas($seleccion, bool &$invalida): string
+function normalizarMonedas($seleccion, bool &$invalida, array $permitidas = ['USD', 'PEN']): string
 {
     if (!is_array($seleccion)) {
         $invalida = true;
@@ -39,13 +39,13 @@ function normalizarMonedas($seleccion, bool &$invalida): string
     }
     $valores = [];
     foreach ($seleccion as $moneda) {
-        if (!is_string($moneda) || !in_array($moneda, ['USD', 'PEN'], true)) {
+        if (!is_string($moneda) || !in_array($moneda, $permitidas, true)) {
             $invalida = true;
         } else {
             $valores[] = $moneda;
         }
     }
-    return implode(',', array_values(array_intersect(['USD', 'PEN'], $valores)));
+    return implode(',', array_values(array_intersect($permitidas, $valores)));
 }
 
 // Listas de valores permitidos (también sirven para validar los POST)
@@ -93,7 +93,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $monedaCuenta = normalizarMonedas($_POST['monedas_cuenta'] ?? [], $monedasInvalidas);
             $monedaCuenta2 = normalizarMonedas($_POST['monedas_cuenta2'] ?? [], $monedasInvalidas);
             $monedaCuenta3 = normalizarMonedas($_POST['monedas_cuenta3'] ?? [], $monedasInvalidas);
-            $monedaDetracciones = normalizarMonedas($_POST['monedas_detracciones'] ?? [], $monedasInvalidas);
+            $monedaDetracciones = normalizarMonedas($_POST['monedas_detracciones'] ?? [], $monedasInvalidas, ['PEN']);
             $personaContacto = trim($_POST['persona_contacto'] ?? '');
             $correo = trim($_POST['correo'] ?? '');
             $celular = trim($_POST['celular'] ?? '');
@@ -501,7 +501,6 @@ require __DIR__ . '/layout_inicio.php';
                     <div class="form-grupo"><label for="f_banco_detracciones">Banco de la Nación</label><select name="banco_detracciones" id="f_banco_detracciones"><option value="">— Seleccionar —</option><option value="<?= e($BANCO_DETRACCIONES) ?>"><?= e($BANCO_DETRACCIONES) ?></option></select></div>
                     <div class="form-grupo"><label for="f_cuenta_detracciones">Número de cuenta de detracciones</label><input type="text" name="cuenta_detracciones" id="f_cuenta_detracciones" maxlength="30"></div>
                     <div class="form-grupo form-moneda" role="group" aria-label="Moneda de la cuenta de detracciones">
-                        <label><input type="checkbox" name="monedas_detracciones[]" value="USD" id="f_monedas_detracciones_usd"> $ Dólares</label>
                         <label><input type="checkbox" name="monedas_detracciones[]" value="PEN" id="f_monedas_detracciones_pen"> S/. Soles</label>
                     </div>
                 </div>
@@ -567,6 +566,12 @@ require __DIR__ . '/layout_inicio.php';
         moneda_cuenta3: "monedas_cuenta3",
         moneda_detracciones: "monedas_detracciones",
     };
+    const monedasPorCampo = {
+        moneda_cuenta: ["USD", "PEN"],
+        moneda_cuenta2: ["USD", "PEN"],
+        moneda_cuenta3: ["USD", "PEN"],
+        moneda_detracciones: ["PEN"],
+    };
     function abrir(p) {
         document.getElementById("m_titulo").textContent = p ? "Editar proveedor" : "Agregar proveedor";
         document.getElementById("f_id").value = p ? p.id : 0;
@@ -586,8 +591,10 @@ require __DIR__ . '/layout_inicio.php';
         });
         Object.entries(camposMoneda).forEach(([campo, grupo]) => {
             const seleccionadas = p ? (p[campo] || "").split(",") : [];
-            ["USD", "PEN"].forEach((moneda) => {
-                document.getElementById("f_" + grupo + "_" + moneda.toLowerCase()).checked = seleccionadas.includes(moneda);
+            const cuentaDetraccionesRegistrada = p && (p.banco_detracciones || p.cuenta_detracciones);
+            const marcadas = campo === "moneda_detracciones" && (seleccionadas.length || cuentaDetraccionesRegistrada) ? ["PEN"] : seleccionadas;
+            monedasPorCampo[campo].forEach((moneda) => {
+                document.getElementById("f_" + grupo + "_" + moneda.toLowerCase()).checked = marcadas.includes(moneda);
             });
         });
         modal.showModal();
@@ -711,7 +718,9 @@ require __DIR__ . '/layout_inicio.php';
     ];
     function textoCampoProveedor(proveedor, campo) {
         let texto = proveedor[campo] || "";
-        if (campo.startsWith("moneda_") && texto) {
+        if (campo === "moneda_detracciones" && (texto || proveedor.banco_detracciones || proveedor.cuenta_detracciones)) {
+            texto = "S/. Soles";
+        } else if (campo.startsWith("moneda_") && texto) {
             texto = texto.split(",").map((moneda) => ({
                 USD: "$ Dólares",
                 PEN: "S/. Soles",
