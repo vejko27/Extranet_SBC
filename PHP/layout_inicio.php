@@ -13,6 +13,8 @@ $adminFormatos = puede('Formatos de Procedimientos internos', 'crear') || puede(
 $veProveedores = puede('Proveedores', 'ver');
 $veRRHH = puede('Recursos Humanos', 'ver');
 $veDetraccion = puede('Cálculo de detracción', 'ver');
+$veFlota = puedeVerFlota();
+$flotaActiva = in_array($paginaActiva, ['tractos', 'carretas', 'lavados'], true);
 $rrhhActivo = in_array($paginaActiva, ['rrhh', 'rrhh_contratos', 'rrhh_documentos_vencidos', 'rrhh_boletas'], true);
 // Lista de manuales y manual activo (solo en la página de manuales)
 $listarFormatos = false;
@@ -74,6 +76,29 @@ $formatoActivo = $paginaActiva === 'formatos_procedimientos' && isset($_GET['m']
             <?php endif; ?>
             <?php if ($veDetraccion): ?>
                 <a href="calculo_detraccion.php" data-short="CD" title="Cálculo de detracción" class="<?= $paginaActiva === 'calculo_detraccion' ? 'activo' : '' ?>">Cálculo de detracción</a>
+            <?php endif; ?>
+            <?php if ($veFlota): ?>
+                <button type="button" class="grupo-titulo grupo-toggle" id="toggle-tractos-carretas" data-short="TC" title="Inventario de tractos y carretas" aria-expanded="true" aria-controls="submenu-tractos-carretas">
+                    <span class="grupo-nombre">Tractos y Carretas</span><span class="flecha" aria-hidden="true">▾</span>
+                </button>
+                <div class="submenu" id="submenu-tractos-carretas">
+                    <a href="flota.php?tipo=tractos" class="sub<?= $paginaActiva === 'tractos' ? ' activo' : '' ?>">Tractos</a>
+                    <a href="flota.php?tipo=carretas" class="sub<?= $paginaActiva === 'carretas' ? ' activo' : '' ?>">Carretas</a>
+                    <a href="lavados.php" class="sub<?= $paginaActiva === 'lavados' ? ' activo' : '' ?>">Lavados</a>
+                </div>
+                <script>
+                (function () {
+                    var b = document.getElementById('toggle-tractos-carretas'), s = document.getElementById('submenu-tractos-carretas');
+                    function set(abierto) {
+                        b.setAttribute('aria-expanded', abierto);
+                        s.hidden = !abierto;
+                        try { localStorage.setItem('menuFlota', abierto ? '1' : '0'); } catch (e) {}
+                    }
+                    var g = null; try { g = localStorage.getItem('menuFlota'); } catch (e) {}
+                    set(g !== '0' || <?= $flotaActiva ? 'true' : 'false' ?>);
+                    b.addEventListener('click', function () { set(b.getAttribute('aria-expanded') !== 'true'); });
+                })();
+                </script>
             <?php endif; ?>
             <?php if ($veRRHH): ?>
                 <button type="button" class="grupo-titulo grupo-toggle<?= $rrhhActivo ? ' activo' : '' ?>" id="toggle-recursos-humanos" data-short="RH" title="Recursos Humanos" aria-expanded="true" aria-controls="submenu-recursos-humanos">

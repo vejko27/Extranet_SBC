@@ -1,3 +1,4 @@
+@charset "UTF-8";
 * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
 
 body { background: #f4f6f9; color: #0f172a; min-height: 100vh; }
@@ -116,6 +117,7 @@ html.sidebar-colapsado .sidebar .grupo-toggle::before { content: attr(data-short
 .tarjeta-acceso p { color: #64748b; font-size: 14px; }
 
 .form-fila { display: flex; gap: 12px; flex-wrap: wrap; }
+.flota-acciones .btn { display: inline-flex; align-items: center; justify-content: center; }
 .form-grupo { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
 .form-grupo label { font-size: 14px; font-weight: 600; color: #334155; }
 
