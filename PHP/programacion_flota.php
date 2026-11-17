@@ -9,7 +9,7 @@ if (!puede('Tractos', 'ver') || !puede('Carretas', 'ver')) {
 date_default_timezone_set('America/Lima');
 $conexion->set_charset('utf8mb4');
 $paginaActiva = 'programacion_flota';
-$tituloPagina = 'Programación de tractos y carretas';
+$tituloPagina = 'Programación de Tractos y Carretas';
 $puedeAdministrar = (int)($_SESSION['rol_id'] ?? 0) === 1;
 $zonaHoraria = new DateTimeZone('America/Lima');
 
@@ -236,7 +236,7 @@ require __DIR__ . '/layout_inicio.php';
 <div class="cabecera-marca">
     <img class="logo-marca" src="../logo/SBC_TRANSPORT.jpg" alt="SMART Transporte de Carga Pesada">
     <div>
-        <h1>Programación de tractos y carretas</h1>
+        <h1>Programación de Tractos y Carretas</h1>
         <p class="subtitulo">Asigna una carreta y registra notas para cada tracto y día.</p>
     </div>
 </div>
