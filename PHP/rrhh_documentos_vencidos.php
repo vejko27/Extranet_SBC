@@ -53,6 +53,15 @@ $consulta = $conexion->query("
             pc_actual.id DESC
         LIMIT 1
     )
+    WHERE d.tipo <> 'Contrato'
+       OR d.id = (
+            SELECT d_reciente.id
+            FROM personal_documentos d_reciente
+            WHERE d_reciente.personal_id = d.personal_id
+              AND d_reciente.tipo = 'Contrato'
+            ORDER BY d_reciente.subido DESC, d_reciente.id DESC
+            LIMIT 1
+       )
     ORDER BY p.apellido_paterno, p.apellido_materno, p.nombres, d.tipo, d.id
 ");
 if (!$consulta) {
