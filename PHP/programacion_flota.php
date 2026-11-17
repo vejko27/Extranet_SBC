@@ -257,7 +257,7 @@ require __DIR__ . '/layout_inicio.php';
         <p>No hay carretas registradas. Registra carretas en el inventario antes de asignarlas.</p>
     <?php else: ?>
     <div class="tabla-wrap programacion-tabla-wrap">
-        <form method="post" action="programacion_flota.php?semana=<?= programacionEscapar($fechaInicio) ?>">
+        <form id="programacion-formulario" method="post" action="programacion_flota.php?semana=<?= programacionEscapar($fechaInicio) ?>">
             <input type="hidden" name="csrf" value="<?= programacionEscapar($_SESSION['csrf']) ?>">
             <input type="hidden" name="semana" value="<?= programacionEscapar($fechaInicio) ?>">
             <table class="programacion-tabla">
@@ -289,14 +289,14 @@ require __DIR__ . '/layout_inicio.php';
                         <td>
                             <?php if ($puedeAdministrar): ?>
                             <label class="sr-only" for="carreta-<?= (int)$tracto['id'] ?>-<?= programacionEscapar($dia['fecha']) ?>">Carreta para <?= programacionEscapar($tracto['placa']) ?> el <?= programacionEscapar($dia['nombre']) ?></label>
-                            <select id="carreta-<?= (int)$tracto['id'] ?>-<?= programacionEscapar($dia['fecha']) ?>" name="asignacion[<?= (int)$tracto['id'] ?>][<?= programacionEscapar($dia['fecha']) ?>]">
-                                <option value="">Sin asignar</option>
+                            <select id="carreta-<?= (int)$tracto['id'] ?>-<?= programacionEscapar($dia['fecha']) ?>" name="asignacion[<?= (int)$tracto['id'] ?>][<?= programacionEscapar($dia['fecha']) ?>]"<?= $error === '' ? ' disabled' : '' ?>>
+                                <option value="">Sin Asignar Tracto</option>
                                 <?php foreach ($carretas as $carreta): ?>
                                 <option value="<?= (int)$carreta['id'] ?>"<?= $actual['carreta_id'] === (string)$carreta['id'] ? ' selected' : '' ?>><?= programacionEscapar($carreta['placa']) ?></option>
                                 <?php endforeach; ?>
                             </select>
                             <label class="sr-only" for="nota-<?= (int)$tracto['id'] ?>-<?= programacionEscapar($dia['fecha']) ?>">Nota para <?= programacionEscapar($tracto['placa']) ?> el <?= programacionEscapar($dia['nombre']) ?></label>
-                            <textarea id="nota-<?= (int)$tracto['id'] ?>-<?= programacionEscapar($dia['fecha']) ?>" name="nota[<?= (int)$tracto['id'] ?>][<?= programacionEscapar($dia['fecha']) ?>]" maxlength="500" rows="2" placeholder="Nota (opcional)"><?= programacionEscapar($actual['nota']) ?></textarea>
+                            <textarea id="nota-<?= (int)$tracto['id'] ?>-<?= programacionEscapar($dia['fecha']) ?>" name="nota[<?= (int)$tracto['id'] ?>][<?= programacionEscapar($dia['fecha']) ?>]" maxlength="500" rows="2" placeholder="Nota (opcional)"<?= $error === '' ? ' disabled' : '' ?>><?= programacionEscapar($actual['nota']) ?></textarea>
                             <?php else: ?>
                                 <?php
                                 $placaCarreta = '';
@@ -319,9 +319,22 @@ require __DIR__ . '/layout_inicio.php';
             </table>
             <?php if ($puedeAdministrar): ?>
             <div class="form-fila programacion-acciones">
-                <button type="submit">Guardar semana</button>
+                <div class="programacion-botones">
+                    <button type="button" class="btn-sec" id="programacion-editar"<?= $error !== '' ? ' disabled' : '' ?>>Editar</button>
+                    <button type="submit" id="programacion-guardar"<?= $error === '' ? ' disabled' : '' ?>>Guardar semana</button>
+                </div>
                 <span>Solo el Administrador puede editar la programación.</span>
             </div>
+            <noscript><p>Activa JavaScript para editar la programación.</p></noscript>
+            <script>
+                document.getElementById('programacion-editar').addEventListener('click', function () {
+                    document.querySelectorAll('#programacion-formulario select, #programacion-formulario textarea').forEach(function (campo) {
+                        campo.disabled = false;
+                    });
+                    this.disabled = true;
+                    document.getElementById('programacion-guardar').disabled = false;
+                });
+            </script>
             <?php endif; ?>
         </form>
     </div>
