@@ -9,7 +9,7 @@ $puedeEliminar = puede('Tractos', 'eliminar');
 if (empty($_SESSION['csrf'])) {
     $_SESSION['csrf'] = bin2hex(random_bytes(32));
 }
-$tractoId = filter_var($_GET['tracto'] ?? 0, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]) ?: 0;
+$tractoId = filter_var($_GET['tracto'] ?? $_POST['tracto'] ?? 0, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]) ?: 0;
 $editarId = filter_var($_GET['editar'] ?? 0, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]) ?: 0;
 $fecha = '';
 $observaciones = '';
@@ -216,11 +216,18 @@ require __DIR__ . '/layout_inicio.php';
 </div>
 <?php endif; ?>
 
-<?php if ($editarId ? $puedeEditar : $puedeCrear): ?>
+<?php if (!$tracto && $puedeCrear): ?>
+<div class="card">
+    <p>Para registrar un mantenimiento, selecciona un tracto en la lista.</p>
+</div>
+<?php endif; ?>
+
+<?php if ($tracto && ($editarId ? $puedeEditar : $puedeCrear)): ?>
 <div class="card" id="formulario-mantenimiento">
     <h2><?= $editarId ? 'Editar mantenimiento o adjuntar factura' : 'Registrar mantenimiento' ?></h2>
     <form method="post" enctype="multipart/form-data">
         <input type="hidden" name="csrf" value="<?= lavadoEscapar($_SESSION['csrf']) ?>">
+        <input type="hidden" name="tracto" value="<?= $tractoId ?>">
         <input type="hidden" name="accion" value="<?= $editarId ? 'editar' : 'crear' ?>">
         <?php if ($editarId): ?><input type="hidden" name="mantenimiento_id" value="<?= $editarId ?>"><?php endif; ?>
         <div class="form-grupo"><label for="fecha-mantenimiento">Fecha de mantenimiento</label>
