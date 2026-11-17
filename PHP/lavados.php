@@ -36,9 +36,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     $accion = $_POST['accion'] ?? '';
     $editarId = filter_var($_POST['lavado_id'] ?? 0, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]) ?: 0;
-    if (!in_array($accion, ['crear', 'editar'], true) || ($accion === 'editar' && !$editarId)) {
+    if (!in_array($accion, ['crear', 'editar', 'eliminar'], true) || ($accion !== 'crear' && !$editarId)) {
         http_response_code(400);
         exit('Acción no válida.');
+    }
+    if ($accion === 'eliminar') {
+        $st = lavadoPreparar('DELETE FROM lavados_tractos WHERE id = ? AND tracto_id = ?');
+        $st->bind_param('ii', $editarId, $tractoId);
+        lavadoEjecutar($st);
+        $eliminado = $st->affected_rows;
+        $st->close();
+        if (!$eliminado) {
+            http_response_code(404);
+            exit('Lavado no encontrado.');
+        }
+        $_SESSION['lavados_mensaje'] = 'Lavado y facturas eliminados correctamente.';
+        header('Location: lavados.php?tracto=' . $tractoId . '#historial-lavados');
+        exit;
     }
     if ($accion === 'crear') {
         $editarId = 0;
@@ -167,7 +181,15 @@ require __DIR__ . '/layout_inicio.php';
                 <td data-label="Fecha de lavado"><?= lavadoEscapar(date('d/m/Y', strtotime($fila['fecha_lavado']))) ?></td>
                 <td data-label="PDF"><?php if ($fila['tiene_pdf']): ?><a href="lavado_factura.php?id=<?= (int)$fila['id'] ?>&amp;tipo=pdf">Descargar PDF</a><?php else: ?>Sin adjuntar<?php endif; ?></td>
                 <td data-label="XML"><?php if ($fila['tiene_xml']): ?><a href="lavado_factura.php?id=<?= (int)$fila['id'] ?>&amp;tipo=xml">Descargar XML</a><?php else: ?>Sin adjuntar<?php endif; ?></td>
-                <td data-label="Acciones" class="celda-acciones"><a class="btn btn-sec" href="lavados.php?tracto=<?= $tractoId ?>&amp;editar=<?= (int)$fila['id'] ?>#formulario-lavado">Editar o adjuntar</a></td>
+                <td data-label="Acciones" class="celda-acciones">
+                    <a class="btn btn-sec" href="lavados.php?tracto=<?= $tractoId ?>&amp;editar=<?= (int)$fila['id'] ?>#formulario-lavado">Editar o adjuntar</a>
+                    <form method="post" class="form-inline" onsubmit="return confirm('¿Eliminar este lavado y sus facturas PDF y XML? Esta acción no se puede deshacer.');">
+                        <input type="hidden" name="csrf" value="<?= lavadoEscapar($_SESSION['csrf']) ?>">
+                        <input type="hidden" name="accion" value="eliminar">
+                        <input type="hidden" name="lavado_id" value="<?= (int)$fila['id'] ?>">
+                        <button type="submit" class="btn-peligro" aria-label="Borrar lavado del <?= lavadoEscapar(date('d/m/Y', strtotime($fila['fecha_lavado']))) ?>">Borrar</button>
+                    </form>
+                </td>
             </tr>
             <?php endforeach; ?>
         </table>
