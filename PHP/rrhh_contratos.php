@@ -33,16 +33,25 @@ $consulta = $conexion->query("
     WHERE NOT EXISTS (
         SELECT 1 FROM personal_contratos pc WHERE pc.personal_id = p.id
     )
-       OR COALESCE(p.tipo_contrato, '') <> ''
-       OR p.contrato_inicio IS NOT NULL
-       OR p.contrato_fin IS NOT NULL
-       OR p.periodo_inicio IS NOT NULL
     UNION ALL
     SELECT p.id AS personal_id, p.apellido_paterno, p.apellido_materno, p.nombres,
            p.sede_labora AS flota, pc.tipo_contrato, pc.contrato_inicio AS fecha_inicio,
            pc.contrato_fin AS fecha_fin, pc.periodo_inicio, pc.id AS orden_contrato
     FROM personal_contratos pc
     INNER JOIN personal p ON p.id = pc.personal_id
+    WHERE NOT EXISTS (
+        SELECT 1
+        FROM personal_contratos pc_reciente
+        WHERE pc_reciente.personal_id = pc.personal_id
+          AND (
+              pc_reciente.contrato_inicio > pc.contrato_inicio
+              OR (pc.contrato_inicio IS NULL AND pc_reciente.contrato_inicio IS NOT NULL)
+              OR (
+                  pc_reciente.contrato_inicio <=> pc.contrato_inicio
+                  AND pc_reciente.id > pc.id
+              )
+          )
+    )
     ORDER BY apellido_paterno, apellido_materno, nombres, orden_contrato
 ");
 if (!$consulta) {
