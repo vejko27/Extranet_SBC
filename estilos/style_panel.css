@@ -492,9 +492,9 @@ dialog { max-height: 92vh; overflow-y: auto; }
     html.sidebar-colapsado .sidebar-cabecera { justify-content: space-between; }
     html.sidebar-colapsado .sidebar .marca { display: block; flex: 1; padding: 0; font-size: 20px; text-align: left; }
     html.sidebar-colapsado .sidebar .marca::before { content: none; }
-    .sidebar-colapsar { display: grid; place-items: center; font-size: 0; }
-    .sidebar-colapsar::before { content: "☰"; font-size: 20px; }
-    .sidebar-movil-abierto .sidebar-colapsar::before { content: "×"; font-size: 24px; }
+    .sidebar-colapsar { display: flex; flex: 0 0 auto; align-items: center; justify-content: center; width: auto; min-width: 34px; padding: 6px 10px; font-size: 0; }
+    .sidebar-colapsar::before { content: "☰ Menú"; font-size: 14px; white-space: nowrap; }
+    .sidebar-movil-abierto .sidebar-colapsar::before { content: "× Cerrar menú"; font-size: 14px; }
     html.sidebar-colapsado .sidebar nav { display: none; margin-top: 10px; padding-top: 8px; }
     .sidebar-movil-abierto .sidebar nav { display: flex; flex-direction: column; gap: 2px; }
     html.sidebar-colapsado .sidebar nav > a,
