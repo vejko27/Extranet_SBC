@@ -17,6 +17,7 @@ $puedeEliminar = puede('Recursos Humanos', 'eliminar');
 $conexion->set_charset('utf8mb4');
 date_default_timezone_set('America/Lima');
 garantizarColumnasExtra($conexion, $CAMPOS_EXTRA);
+garantizarTablaContratos($conexion);
 garantizarColumnasVigenciaDocumentos($conexion);
 if (empty($_SESSION['csrf'])) {
     $_SESSION['csrf'] = bin2hex(random_bytes(32));
@@ -38,7 +39,9 @@ $dir = dirname(__DIR__) . '/Documentos_Personal/';
 
 // Carga la persona indicada por id; si no existe responde 404
 $pid = (int)($_GET['id'] ?? $_POST['id'] ?? 0);
-$s = $conexion->prepare("SELECT apellido_paterno, apellido_materno, nombres, dni, carnet_extranjeria, pasaporte, fecha_vencimiento_doc FROM personal WHERE id = ?");
+$s = $conexion->prepare("SELECT apellido_paterno, apellido_materno, nombres, dni, carnet_extranjeria, pasaporte,
+    fecha_vencimiento_doc, tipo_contrato, contrato_inicio, contrato_fin, periodo_inicio
+    FROM personal WHERE id = ?");
 $s->bind_param('i', $pid);
 $s->execute();
 $persona = $s->get_result()->fetch_assoc();
@@ -46,6 +49,29 @@ if (!$persona) {
     http_response_code(404);
     exit('Persona no encontrada');
 }
+$s = $conexion->prepare("SELECT id, tipo_contrato, contrato_inicio, contrato_fin, periodo_inicio
+    FROM personal_contratos WHERE personal_id = ? ORDER BY id DESC LIMIT 1");
+$s->bind_param('i', $pid);
+$s->execute();
+$contratoOrigen = $s->get_result()->fetch_assoc();
+if (!$contratoOrigen) {
+    $contratoOrigen = [
+        'tipo_contrato' => $persona['tipo_contrato'],
+        'contrato_inicio' => $persona['contrato_inicio'],
+        'contrato_fin' => $persona['contrato_fin'],
+        'periodo_inicio' => $persona['periodo_inicio'],
+    ];
+}
+$fechaInicioContrato = (string)($contratoOrigen['contrato_inicio'] ?? '');
+$fechaFinContrato = (string)($contratoOrigen['contrato_fin'] ?? '');
+$periodoInicioContrato = (string)($contratoOrigen['periodo_inicio'] ?? '');
+if (!fechaValida($fechaInicioContrato)) $fechaInicioContrato = '';
+if (!fechaValida($fechaFinContrato)) $fechaFinContrato = '';
+if (!fechaValida($periodoInicioContrato)) $periodoInicioContrato = '';
+$contratoTieneDatos = trim((string)$contratoOrigen['tipo_contrato']) !== ''
+    || $fechaInicioContrato !== ''
+    || $fechaFinContrato !== ''
+    || $periodoInicioContrato !== '';
 
 // Procesamiento POST: valida CSRF y atiende las acciones de documentos
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -63,6 +89,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $fechaPerfil = (string)($persona['fecha_vencimiento_doc'] ?? '');
         if ($tipo === 'DNI' && !$sinVencimiento && $fechaVencimiento === '' && fechaValida($fechaPerfil)) {
             $fechaVencimiento = $fechaPerfil;
+        }
+        if ($tipo === 'Contrato') {
+            if ($fechaInicio === '' && $fechaInicioContrato !== '') {
+                $fechaInicio = $fechaInicioContrato;
+            }
+            if (!$sinVencimiento && $fechaVencimiento === '') {
+                if ($fechaFinContrato !== '') {
+                    $fechaVencimiento = $fechaFinContrato;
+                } elseif ($contratoTieneDatos) {
+                    $sinVencimiento = true;
+                }
+            }
         }
         $f = $_FILES['archivo'] ?? null;
         if (!$puedeSubir) {
@@ -191,15 +229,34 @@ $s->bind_param('i', $pid);
 $s->execute();
 $docs = $s->get_result()->fetch_all(MYSQLI_ASSOC);
 $fechaVencimientoDocumento = (string)($persona['fecha_vencimiento_doc'] ?? '');
-if (fechaValida($fechaVencimientoDocumento)) {
-    foreach ($docs as &$doc) {
-        $sinFechaVencimiento = empty($doc['fecha_vencimiento']) || $doc['fecha_vencimiento'] === '0000-00-00';
-        if ($doc['tipo'] === 'DNI' && $sinFechaVencimiento && empty($doc['sin_vencimiento'])) {
-            $doc['fecha_vencimiento'] = $fechaVencimientoDocumento;
+if (!fechaValida($fechaVencimientoDocumento)) {
+    $fechaVencimientoDocumento = '';
+}
+foreach ($docs as &$doc) {
+    $sinFechaInicio = empty($doc['fecha_inicio']) || $doc['fecha_inicio'] === '0000-00-00';
+    $sinFechaVencimiento = empty($doc['fecha_vencimiento']) || $doc['fecha_vencimiento'] === '0000-00-00';
+    if ($sinFechaInicio) {
+        $doc['fecha_inicio'] = '';
+    }
+    if ($sinFechaVencimiento) {
+        $doc['fecha_vencimiento'] = '';
+    }
+    if ($doc['tipo'] === 'DNI' && $sinFechaVencimiento && empty($doc['sin_vencimiento'])) {
+        $doc['fecha_vencimiento'] = $fechaVencimientoDocumento;
+    } elseif ($doc['tipo'] === 'Contrato') {
+        if ($sinFechaInicio) {
+            $doc['fecha_inicio'] = $fechaInicioContrato;
+        }
+        if ($sinFechaVencimiento && empty($doc['sin_vencimiento'])) {
+            if ($fechaFinContrato !== '') {
+                $doc['fecha_vencimiento'] = $fechaFinContrato;
+            } elseif ($contratoTieneDatos) {
+                $doc['sin_vencimiento'] = 1;
+            }
         }
     }
-    unset($doc);
 }
+unset($doc);
 $documentoEditar = (int)($_GET['doc'] ?? 0);
 
 // Filtro opcional por tipo y datos de presentación de la persona
@@ -248,7 +305,7 @@ require __DIR__ . '/layout_inicio.php';
                 <option value="">— Seleccionar —</option>
                 <?php foreach ($TIPOS as $t): ?><option><?= e($t) ?></option><?php endforeach; ?>
             </select></div>
-        <div class="form-grupo"><label>Fecha de inicio</label><input type="date" name="fecha_inicio"></div>
+        <div class="form-grupo"><label>Fecha de inicio</label><input type="date" name="fecha_inicio" id="fecha-inicio-nuevo"></div>
         <div class="form-grupo"><label>Fecha de vencimiento</label><input type="date" name="fecha_vencimiento" id="fecha-vencimiento-nuevo"></div>
         <div class="form-grupo"><label class="ficha-check documentos-check"><input type="checkbox" name="sin_vencimiento" id="sin-vencimiento-nuevo" value="1"> No caduca</label></div>
         <div class="form-grupo"><label>Descripción (opcional)</label><input type="text" name="descripcion" maxlength="150" placeholder="Ej.: Contrato a plazo fijo 2026"></div>
@@ -258,23 +315,46 @@ require __DIR__ . '/layout_inicio.php';
 </form>
 <script>
     const tipoDocumentoNuevo = document.getElementById("tipo-documento-nuevo");
+    const fechaInicioNuevo = document.getElementById("fecha-inicio-nuevo");
     const fechaVencimientoNuevo = document.getElementById("fecha-vencimiento-nuevo");
     const sinVencimientoNuevo = document.getElementById("sin-vencimiento-nuevo");
     const fechaVencimientoDni = <?= json_encode($fechaVencimientoDocumento) ?>;
-    let fechaDniAutocompletada = false;
-    const completarFechaDni = () => {
-        if (tipoDocumentoNuevo.value === "DNI" && !sinVencimientoNuevo.checked && !fechaVencimientoNuevo.value && fechaVencimientoDni) {
-            fechaVencimientoNuevo.value = fechaVencimientoDni;
-            fechaDniAutocompletada = true;
-        } else if (tipoDocumentoNuevo.value !== "DNI" && fechaDniAutocompletada && fechaVencimientoNuevo.value === fechaVencimientoDni) {
-            fechaVencimientoNuevo.value = "";
-            fechaDniAutocompletada = false;
+    const fechaInicioContrato = <?= json_encode($fechaInicioContrato) ?>;
+    const fechaFinContrato = <?= json_encode($fechaFinContrato) ?>;
+    const contratoSinVencimiento = <?= json_encode($contratoTieneDatos && $fechaFinContrato === '') ?>;
+    const fechasAutocompletadas = { inicio: "", vencimiento: "" };
+    let sinVencimientoAutocompletado = false;
+    const completarVigencia = () => {
+        const origen = tipoDocumentoNuevo.value === "DNI"
+            ? { inicio: "", vencimiento: fechaVencimientoDni }
+            : tipoDocumentoNuevo.value === "Contrato"
+                ? { inicio: fechaInicioContrato, vencimiento: fechaFinContrato }
+                : { inicio: "", vencimiento: "" };
+        [[ "inicio", fechaInicioNuevo, origen.inicio ], [ "vencimiento", fechaVencimientoNuevo, origen.vencimiento ]].forEach(([campo, input, fecha]) => {
+            if (fechasAutocompletadas[campo] && input.value === fechasAutocompletadas[campo] && fecha !== fechasAutocompletadas[campo]) {
+                input.value = "";
+            }
+            fechasAutocompletadas[campo] = "";
+            if (!input.value && fecha && (campo !== "vencimiento" || !sinVencimientoNuevo.checked)) {
+                input.value = fecha;
+                fechasAutocompletadas[campo] = fecha;
+            }
+        });
+        const origenSinVencimiento = tipoDocumentoNuevo.value === "Contrato" && contratoSinVencimiento;
+        if (sinVencimientoAutocompletado && !origenSinVencimiento && sinVencimientoNuevo.checked) {
+            sinVencimientoNuevo.checked = false;
         }
+        sinVencimientoAutocompletado = false;
+        if (origenSinVencimiento && !sinVencimientoNuevo.checked && !fechaVencimientoNuevo.value) {
+            sinVencimientoNuevo.checked = true;
+            sinVencimientoAutocompletado = true;
+        }
+        fechaVencimientoNuevo.disabled = sinVencimientoNuevo.checked;
     };
-    tipoDocumentoNuevo.addEventListener("change", completarFechaDni);
+    tipoDocumentoNuevo.addEventListener("change", completarVigencia);
     sinVencimientoNuevo.addEventListener("change", () => {
         fechaVencimientoNuevo.disabled = sinVencimientoNuevo.checked;
-        if (!sinVencimientoNuevo.checked) completarFechaDni();
+        if (!sinVencimientoNuevo.checked) completarVigencia();
     });
 </script>
 <?php endif; ?>

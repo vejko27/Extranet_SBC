@@ -9,6 +9,7 @@ exigirPermiso('Recursos Humanos', 'ver');
 $puedeEditar = puede('Recursos Humanos', 'editar');
 $conexion->set_charset('utf8mb4');
 garantizarColumnasExtra($conexion, $CAMPOS_EXTRA);
+garantizarTablaContratos($conexion);
 garantizarColumnasVigenciaDocumentos($conexion);
 date_default_timezone_set('America/Lima');
 
@@ -26,18 +27,25 @@ function fechaDocumento(string $valor): ?DateTimeImmutable
     return $fecha && $fecha->format('Y-m-d') === $valor ? $fecha : null;
 }
 
+function fechaDocumentoDisponible($valor): string
+{
+    $fecha = trim((string)$valor);
+    return in_array($fecha, ['', '0000-00-00'], true) ? '' : $fecha;
+}
+
 $consulta = $conexion->query("
-    SELECT d.id, d.personal_id, d.tipo AS unidad, d.fecha_inicio,
-           COALESCE(
-               NULLIF(NULLIF(CAST(d.fecha_vencimiento AS CHAR), ''), '0000-00-00'),
-               CASE WHEN d.tipo = 'DNI'
-                   THEN NULLIF(NULLIF(CAST(p.fecha_vencimiento_doc AS CHAR), ''), '0000-00-00')
-               END
-           ) AS fecha_vencimiento,
-           d.sin_vencimiento, p.apellido_paterno, p.apellido_materno, p.nombres,
-           p.sede_labora AS flota
+    SELECT d.id, d.personal_id, d.tipo AS unidad, d.fecha_inicio, d.fecha_vencimiento,
+           d.sin_vencimiento, p.apellido_paterno, p.apellido_materno, p.nombres, p.sede_labora AS flota,
+           p.fecha_vencimiento_doc, p.tipo_contrato AS personal_tipo_contrato,
+           p.contrato_inicio AS personal_contrato_inicio, p.contrato_fin AS personal_contrato_fin,
+           p.periodo_inicio AS personal_periodo_inicio, pc.id AS contrato_tabla_id,
+           pc.tipo_contrato AS tabla_tipo_contrato, pc.contrato_inicio AS tabla_contrato_inicio,
+           pc.contrato_fin AS tabla_contrato_fin, pc.periodo_inicio AS tabla_periodo_inicio
     FROM personal_documentos d
     INNER JOIN personal p ON p.id = d.personal_id
+    LEFT JOIN personal_contratos pc ON pc.id = (
+        SELECT MAX(pc_actual.id) FROM personal_contratos pc_actual WHERE pc_actual.personal_id = p.id
+    )
     ORDER BY p.apellido_paterno, p.apellido_materno, p.nombres, d.tipo, d.id
 ");
 if (!$consulta) {
@@ -59,8 +67,28 @@ foreach ($filas as &$fila) {
         $fila['apellido_materno'],
         $fila['nombres'],
     ], static fn($valor) => trim((string)$valor) !== '')));
-    $fila['fecha_inicio_obj'] = fechaDocumento((string)($fila['fecha_inicio'] ?? ''));
-    $fechaVencimientoRaw = (string)($fila['fecha_vencimiento'] ?? '');
+    $fechaInicioRaw = fechaDocumentoDisponible($fila['fecha_inicio'] ?? '');
+    $fechaVencimientoRaw = fechaDocumentoDisponible($fila['fecha_vencimiento'] ?? '');
+    if ($fila['unidad'] === 'Contrato') {
+        $usaContratoTabla = !empty($fila['contrato_tabla_id']);
+        $tipoContrato = (string)($usaContratoTabla ? $fila['tabla_tipo_contrato'] : $fila['personal_tipo_contrato']);
+        $fechaInicioContrato = fechaDocumentoDisponible($usaContratoTabla ? $fila['tabla_contrato_inicio'] : $fila['personal_contrato_inicio']);
+        $fechaFinContrato = fechaDocumentoDisponible($usaContratoTabla ? $fila['tabla_contrato_fin'] : $fila['personal_contrato_fin']);
+        $periodoInicioContrato = fechaDocumentoDisponible($usaContratoTabla ? $fila['tabla_periodo_inicio'] : $fila['personal_periodo_inicio']);
+        $contratoTieneDatos = trim($tipoContrato) !== '' || $fechaInicioContrato !== '' || $fechaFinContrato !== '' || $periodoInicioContrato !== '';
+        if ($fechaInicioRaw === '') {
+            $fechaInicioRaw = $fechaInicioContrato;
+        }
+        if ($fechaVencimientoRaw === '' && empty($fila['sin_vencimiento'])) {
+            $fechaVencimientoRaw = $fechaFinContrato;
+            if ($fechaVencimientoRaw === '' && $contratoTieneDatos) {
+                $fila['sin_vencimiento'] = 1;
+            }
+        }
+    } elseif ($fila['unidad'] === 'DNI' && $fechaVencimientoRaw === '' && empty($fila['sin_vencimiento'])) {
+        $fechaVencimientoRaw = fechaDocumentoDisponible($fila['fecha_vencimiento_doc'] ?? '');
+    }
+    $fila['fecha_inicio_obj'] = fechaDocumento($fechaInicioRaw);
     $fila['fecha_vencimiento_obj'] = fechaDocumento($fechaVencimientoRaw);
     $fila['dias_disponibles'] = null;
 
