@@ -10,9 +10,9 @@ function lavadoFalloBD(string $detalle): void
 {
     global $conexion;
     $conexion->rollback();
-    error_log('Lavados: ' . $detalle);
+    error_log('Registros de flota: ' . $detalle);
     http_response_code(500);
-    exit('No se pudo acceder a los lavados. Contacte al administrador.');
+    exit('No se pudo acceder al registro. Contacte al administrador.');
 }
 
 function lavadoPreparar(string $sql): mysqli_stmt
@@ -63,7 +63,7 @@ function lavadoArchivo(string $campo, string $tipo, string &$error): ?string
     }
     $contenido = file_get_contents($archivo['tmp_name']);
     if ($contenido === false || strlen($contenido) !== (int)$archivo['size']) {
-        error_log('Lavados: no se pudo leer el archivo subido.');
+        error_log('Registros de flota: no se pudo leer el archivo subido.');
         $error = 'No se pudo leer el archivo ' . strtoupper($tipo) . '.';
         return null;
     }
@@ -86,23 +86,35 @@ function lavadoArchivo(string $campo, string $tipo, string &$error): ?string
     return $contenido;
 }
 
-function lavadoGuardarArchivo(int $lavadoId, string $tipo, string $contenido): void
+function lavadoTablasFacturas(string $origen): array
+{
+    if ($origen === 'lavados') {
+        return ['lavados_facturas', 'lavados_factura_partes', 'lavado_id'];
+    }
+    if ($origen === 'mantenimientos') {
+        return ['mantenimientos_facturas', 'mantenimientos_factura_partes', 'mantenimiento_id'];
+    }
+    throw new InvalidArgumentException('Origen de factura no válido.');
+}
+
+function lavadoGuardarArchivo(int $lavadoId, string $tipo, string $contenido, string $origen = 'lavados'): void
 {
     global $conexion;
+    [$tablaFacturas, $tablaPartes, $columnaId] = lavadoTablasFacturas($origen);
     $tamano = strlen($contenido);
-    $st = lavadoPreparar('INSERT INTO lavados_facturas (lavado_id, tipo, tamano) VALUES (?, ?, ?)
-        ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id), tamano = VALUES(tamano)');
+    $st = lavadoPreparar("INSERT INTO $tablaFacturas ($columnaId, tipo, tamano) VALUES (?, ?, ?)
+        ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id), tamano = VALUES(tamano)");
     $st->bind_param('isi', $lavadoId, $tipo, $tamano);
     lavadoEjecutar($st);
     $facturaId = (int)$conexion->insert_id;
     $st->close();
 
-    $st = lavadoPreparar('DELETE FROM lavados_factura_partes WHERE factura_id = ?');
+    $st = lavadoPreparar("DELETE FROM $tablaPartes WHERE factura_id = ?");
     $st->bind_param('i', $facturaId);
     lavadoEjecutar($st);
     $st->close();
 
-    $st = lavadoPreparar('INSERT INTO lavados_factura_partes (factura_id, numero, contenido) VALUES (?, ?, ?)');
+    $st = lavadoPreparar("INSERT INTO $tablaPartes (factura_id, numero, contenido) VALUES (?, ?, ?)");
     $numero = 0;
     $parte = '';
     $st->bind_param('iis', $facturaId, $numero, $parte);
