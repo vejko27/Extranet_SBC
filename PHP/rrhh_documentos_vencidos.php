@@ -8,6 +8,7 @@ require_once __DIR__ . '/rrhh_campos_extra.php';
 exigirPermiso('Recursos Humanos', 'ver');
 $puedeEditar = puede('Recursos Humanos', 'editar');
 $conexion->set_charset('utf8mb4');
+garantizarColumnasExtra($conexion, $CAMPOS_EXTRA);
 garantizarColumnasVigenciaDocumentos($conexion);
 date_default_timezone_set('America/Lima');
 
@@ -26,7 +27,13 @@ function fechaDocumento(string $valor): ?DateTimeImmutable
 }
 
 $consulta = $conexion->query("
-    SELECT d.id, d.personal_id, d.tipo AS unidad, d.fecha_inicio, d.fecha_vencimiento,
+    SELECT d.id, d.personal_id, d.tipo AS unidad, d.fecha_inicio,
+           COALESCE(
+               NULLIF(NULLIF(CAST(d.fecha_vencimiento AS CHAR), ''), '0000-00-00'),
+               CASE WHEN d.tipo = 'DNI'
+                   THEN NULLIF(NULLIF(CAST(p.fecha_vencimiento_doc AS CHAR), ''), '0000-00-00')
+               END
+           ) AS fecha_vencimiento,
            d.sin_vencimiento, p.apellido_paterno, p.apellido_materno, p.nombres,
            p.sede_labora AS flota
     FROM personal_documentos d
