@@ -47,37 +47,3 @@ function exigirPermiso(string $modulo, string $accion): void
         exit('Acceso denegado');
     }
 }
-
-function puedeVerFlota(): bool
-{
-    $rol = (int)($_SESSION['rol_id'] ?? 0);
-    if ($rol === 1) {
-        return true;
-    }
-    if ($rol <= 0) {
-        return false;
-    }
-
-    global $conexion;
-    $st = $conexion->prepare('SELECT nombre FROM roles WHERE id = ?');
-    if (!$st) {
-        error_log('Flota: no se pudo consultar el rol: ' . $conexion->error);
-        http_response_code(500);
-        exit('No se pudo verificar el acceso a la flota.');
-    }
-    $st->bind_param('i', $rol);
-    if (!$st->execute()) {
-        error_log('Flota: no se pudo consultar el rol: ' . $st->error);
-        http_response_code(500);
-        exit('No se pudo verificar el acceso a la flota.');
-    }
-    $resultado = $st->get_result();
-    if (!$resultado) {
-        error_log('Flota: no se pudo leer el rol: ' . $st->error);
-        http_response_code(500);
-        exit('No se pudo verificar el acceso a la flota.');
-    }
-    $rolNombre = $resultado->fetch_assoc()['nombre'] ?? '';
-    $st->close();
-    return in_array($rolNombre, ['Operativo', 'Gerencial'], true);
-}

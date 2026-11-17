@@ -1,15 +1,14 @@
 <?php
 require_once __DIR__ . '/auth.php';
-if (!puedeVerFlota()) {
-    http_response_code(403);
-    exit('Acceso denegado');
-}
-
 $tipo = $_GET['tipo'] ?? '';
 if (!is_string($tipo) || !in_array($tipo, ['tractos', 'carretas'], true)) {
     http_response_code(400);
     exit('Tipo de inventario no válido.');
 }
+$modulo = $tipo === 'tractos' ? 'Tractos' : 'Carretas';
+exigirPermiso($modulo, 'ver');
+$puedeCrear = puede($modulo, 'crear');
+$puedeEditar = puede($modulo, 'editar');
 $conexion->set_charset('utf8mb4');
 $paginaActiva = $tipo;
 $tituloPagina = $tipo === 'tractos' ? 'Inventario de tractos' : 'Inventario de carretas';
@@ -66,6 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         http_response_code(400);
         exit('Acción no válida.');
     }
+    exigirPermiso($modulo, $accion === 'crear' ? 'crear' : 'editar');
     if ($accion === 'crear') {
         $id = 0;
     }
@@ -113,6 +113,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $st->close();
     }
 } elseif (isset($_GET['editar'])) {
+    exigirPermiso($modulo, 'editar');
     $id = filter_var($_GET['editar'], FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]) ?: 0;
     if (!$id) {
         http_response_code(400);
@@ -171,7 +172,9 @@ require __DIR__ . '/layout_inicio.php';
                 <?php if ($nombreRequerido): ?><td data-label="Nombre"><?= $unidad['nombre'] !== '' ? flotaEscapar($unidad['nombre']) : 'Sin nombre' ?></td><?php endif; ?>
                 <td data-label="Placa"><?= flotaEscapar($unidad['placa']) ?></td>
                 <td data-label="Última actualización"><?= $unidad['actualizado_en'] ? flotaEscapar(date('d/m/Y H:i', strtotime($unidad['actualizado_en']))) : 'Sin registrar' ?></td>
-                <td data-label="Acciones" class="celda-acciones"><a class="btn" href="flota.php?tipo=<?= flotaEscapar($tipo) ?>&amp;editar=<?= (int)$unidad['id'] ?>#formulario-flota">Editar</a></td>
+                <td data-label="Acciones" class="celda-acciones">
+                    <?php if ($puedeEditar): ?><a class="btn" href="flota.php?tipo=<?= flotaEscapar($tipo) ?>&amp;editar=<?= (int)$unidad['id'] ?>#formulario-flota">Editar</a><?php endif; ?>
+                </td>
             </tr>
             <?php endforeach; ?>
         </table>
@@ -180,6 +183,7 @@ require __DIR__ . '/layout_inicio.php';
     <p>La fecha se registra automáticamente al crear o actualizar una unidad.</p>
 </div>
 
+<?php if ($id ? $puedeEditar : $puedeCrear): ?>
 <div class="card" id="formulario-flota">
     <h2><?= $id ? 'Editar unidad' : 'Agregar unidad' ?></h2>
     <form method="post">
@@ -202,5 +206,6 @@ require __DIR__ . '/layout_inicio.php';
         </div>
     </form>
 </div>
+<?php endif; ?>
 
 <?php require __DIR__ . '/layout_fin.php'; ?>

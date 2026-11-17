@@ -1,9 +1,6 @@
 <?php
 require_once __DIR__ . '/auth.php';
-if (!puedeVerFlota()) {
-    http_response_code(403);
-    exit('Acceso denegado');
-}
+exigirPermiso('Tractos', 'ver');
 $conexion->set_charset('utf8mb4');
 
 function lavadoFalloBD(string $detalle): void

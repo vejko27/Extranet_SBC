@@ -2,6 +2,9 @@
 require_once __DIR__ . '/lavados_helper.php';
 $paginaActiva = 'lavados';
 $tituloPagina = 'Lavados de tractos';
+$puedeCrear = puede('Tractos', 'crear');
+$puedeEditar = puede('Tractos', 'editar');
+$puedeEliminar = puede('Tractos', 'eliminar');
 
 if (empty($_SESSION['csrf'])) {
     $_SESSION['csrf'] = bin2hex(random_bytes(32));
@@ -40,6 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         http_response_code(400);
         exit('Acción no válida.');
     }
+    exigirPermiso('Tractos', $accion);
     if ($accion === 'eliminar') {
         $st = lavadoPreparar('DELETE FROM lavados_tractos WHERE id = ? AND tracto_id = ?');
         $st->bind_param('ii', $editarId, $tractoId);
@@ -105,6 +109,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 } elseif ($editarId && $tracto) {
+    exigirPermiso('Tractos', 'editar');
     $st = lavadoPreparar('SELECT fecha_lavado FROM lavados_tractos WHERE id = ? AND tracto_id = ?');
     $st->bind_param('ii', $editarId, $tractoId);
     lavadoEjecutar($st);
@@ -182,13 +187,15 @@ require __DIR__ . '/layout_inicio.php';
                 <td data-label="PDF"><?php if ($fila['tiene_pdf']): ?><a href="lavado_factura.php?id=<?= (int)$fila['id'] ?>&amp;tipo=pdf">Descargar PDF</a><?php else: ?>Sin adjuntar<?php endif; ?></td>
                 <td data-label="XML"><?php if ($fila['tiene_xml']): ?><a href="lavado_factura.php?id=<?= (int)$fila['id'] ?>&amp;tipo=xml">Descargar XML</a><?php else: ?>Sin adjuntar<?php endif; ?></td>
                 <td data-label="Acciones" class="celda-acciones">
-                    <a class="btn btn-sec" href="lavados.php?tracto=<?= $tractoId ?>&amp;editar=<?= (int)$fila['id'] ?>#formulario-lavado">Editar o adjuntar</a>
+                    <?php if ($puedeEditar): ?><a class="btn btn-sec" href="lavados.php?tracto=<?= $tractoId ?>&amp;editar=<?= (int)$fila['id'] ?>#formulario-lavado">Editar o adjuntar</a><?php endif; ?>
+                    <?php if ($puedeEliminar): ?>
                     <form method="post" class="form-inline" onsubmit="return confirm('¿Eliminar este lavado y sus facturas PDF y XML? Esta acción no se puede deshacer.');">
                         <input type="hidden" name="csrf" value="<?= lavadoEscapar($_SESSION['csrf']) ?>">
                         <input type="hidden" name="accion" value="eliminar">
                         <input type="hidden" name="lavado_id" value="<?= (int)$fila['id'] ?>">
                         <button type="submit" class="btn-peligro" aria-label="Borrar lavado del <?= lavadoEscapar(date('d/m/Y', strtotime($fila['fecha_lavado']))) ?>">Borrar</button>
                     </form>
+                    <?php endif; ?>
                 </td>
             </tr>
             <?php endforeach; ?>
@@ -196,7 +203,9 @@ require __DIR__ . '/layout_inicio.php';
     </div>
     <?php endif; ?>
 </div>
+<?php endif; ?>
 
+<?php if ($editarId ? $puedeEditar : $puedeCrear): ?>
 <div class="card" id="formulario-lavado">
     <h2><?= $editarId ? 'Editar lavado o adjuntar factura' : 'Registrar lavado' ?></h2>
     <form method="post" enctype="multipart/form-data">

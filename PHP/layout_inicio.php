@@ -13,7 +13,9 @@ $adminFormatos = puede('Formatos de Procedimientos internos', 'crear') || puede(
 $veProveedores = puede('Proveedores', 'ver');
 $veRRHH = puede('Recursos Humanos', 'ver');
 $veDetraccion = puede('Cálculo de detracción', 'ver');
-$veFlota = puedeVerFlota();
+$veTractos = puede('Tractos', 'ver');
+$veCarretas = puede('Carretas', 'ver');
+$veFlota = $veTractos || $veCarretas;
 $flotaActiva = in_array($paginaActiva, ['tractos', 'carretas', 'lavados', 'mantenimiento_tractos'], true);
 $rrhhActivo = in_array($paginaActiva, ['rrhh', 'rrhh_contratos', 'rrhh_documentos_vencidos', 'rrhh_boletas'], true);
 // Lista de manuales y manual activo (solo en la página de manuales)
@@ -82,10 +84,14 @@ $formatoActivo = $paginaActiva === 'formatos_procedimientos' && isset($_GET['m']
                     <span class="grupo-nombre">Tractos y Carretas</span><span class="flecha" aria-hidden="true">▾</span>
                 </button>
                 <div class="submenu" id="submenu-tractos-carretas">
-                    <a href="flota.php?tipo=tractos" class="sub<?= $paginaActiva === 'tractos' ? ' activo' : '' ?>">Tractos</a>
-                    <a href="flota.php?tipo=carretas" class="sub<?= $paginaActiva === 'carretas' ? ' activo' : '' ?>">Carretas</a>
-                    <a href="lavados.php" class="sub<?= $paginaActiva === 'lavados' ? ' activo' : '' ?>">Lavados</a>
-                    <a href="mantenimiento_tractos.php" class="sub<?= $paginaActiva === 'mantenimiento_tractos' ? ' activo' : '' ?>">Mantenimiento de Tractos</a>
+                    <?php if ($veTractos): ?>
+                        <a href="flota.php?tipo=tractos" class="sub<?= $paginaActiva === 'tractos' ? ' activo' : '' ?>">Tractos</a>
+                        <a href="lavados.php" class="sub<?= $paginaActiva === 'lavados' ? ' activo' : '' ?>">Lavados</a>
+                        <a href="mantenimiento_tractos.php" class="sub<?= $paginaActiva === 'mantenimiento_tractos' ? ' activo' : '' ?>">Mantenimiento de Tractos</a>
+                    <?php endif; ?>
+                    <?php if ($veCarretas): ?>
+                        <a href="flota.php?tipo=carretas" class="sub<?= $paginaActiva === 'carretas' ? ' activo' : '' ?>">Carretas</a>
+                    <?php endif; ?>
                 </div>
                 <script>
                 (function () {
