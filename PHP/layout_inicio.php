@@ -82,8 +82,8 @@ $formatoActivo = $paginaActiva === 'formatos_procedimientos' && isset($_GET['m']
                 <a href="calculo_detraccion.php" data-short="CD" title="Cálculo de detracción" class="<?= $paginaActiva === 'calculo_detraccion' ? 'activo' : '' ?>">Cálculo de detracción</a>
             <?php endif; ?>
             <?php if ($veSueldo): ?>
-                <button type="button" class="grupo-titulo grupo-toggle<?= $sueldoActivo ? ' activo' : '' ?>" id="toggle-sueldo" data-short="S" title="Sueldo" aria-expanded="true" aria-controls="submenu-sueldo">
-                    <span class="grupo-nombre">Sueldo</span><span class="flecha" aria-hidden="true">▾</span>
+                <button type="button" class="grupo-titulo grupo-toggle<?= $sueldoActivo ? ' activo' : '' ?>" id="toggle-sueldo" data-short="MS" title="Mundo Sueldos" aria-expanded="true" aria-controls="submenu-sueldo">
+                    <span class="grupo-nombre">Mundo Sueldos</span><span class="flecha" aria-hidden="true">▾</span>
                 </button>
                 <div class="submenu" id="submenu-sueldo">
                     <a href="sueldo.php" class="sub<?= $paginaActiva === 'sueldo' ? ' activo' : '' ?>">Planilla</a>

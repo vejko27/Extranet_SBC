@@ -17,6 +17,7 @@ if ($veFormatos)    $tarjetas[] = ['formatos_procedimientos.php', 'Formatos de P
 if ($veProveedores) $tarjetas[] = ['proveedores.php', 'Proveedores', 'Listado de proveedores homologados.'];
 if ($veDetraccion)  $tarjetas[] = ['calculo_detraccion.php', 'Cálculo de detracción', 'Prepara los datos para el cálculo de detracción.'];
 if ($veRRHH)        $tarjetas[] = ['rrhh.php', 'Recursos Humanos', 'Fichas de datos del personal.'];
+if ($veSueldo)      $tarjetas[] = ['sueldo.php', 'Mundo Sueldos', 'Consulta la planilla de remuneraciones.'];
 ?>
 
 <?php /* Saludo al usuario en sesión */ ?>
