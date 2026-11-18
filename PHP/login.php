@@ -43,6 +43,7 @@ if ($resultado->num_rows > 0) {
         $_SESSION['id_usuario'] = $user['id'];
         $_SESSION['rol_id'] = $user['rol_id'];
         $_SESSION['nombre'] = $user['nombre'];
+        $_SESSION['ultima_actividad'] = time();
 
         header('Location: dashboard.php');
         exit;

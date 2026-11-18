@@ -12,12 +12,14 @@ $veFormatos = puede('Formatos de Procedimientos internos', 'ver');
 $adminFormatos = puede('Formatos de Procedimientos internos', 'crear') || puede('Formatos de Procedimientos internos', 'editar') || puede('Formatos de Procedimientos internos', 'eliminar');
 $veProveedores = puede('Proveedores', 'ver');
 $veRRHH = puede('Recursos Humanos', 'ver');
+$veSueldo = puede('Sueldo', 'ver');
 $veDetraccion = puede('Cálculo de detracción', 'ver');
 $veTractos = puede('Tractos', 'ver');
 $veCarretas = puede('Carretas', 'ver');
 $veFlota = $veTractos || $veCarretas;
 $flotaActiva = in_array($paginaActiva, ['flota_inicio', 'tractos', 'carretas', 'lavados', 'mantenimiento_tractos', 'programacion_flota'], true);
 $rrhhActivo = in_array($paginaActiva, ['rrhh', 'rrhh_contratos', 'rrhh_documentos_vencidos', 'rrhh_boletas'], true);
+$sueldoActivo = in_array($paginaActiva, ['sueldo', 'sueldo_mantenimiento'], true);
 // Lista de manuales y manual activo (solo en la página de manuales)
 $listarFormatos = false;
 $manuales = require __DIR__ . '/manuales_lista.php';
@@ -78,6 +80,28 @@ $formatoActivo = $paginaActiva === 'formatos_procedimientos' && isset($_GET['m']
             <?php endif; ?>
             <?php if ($veDetraccion): ?>
                 <a href="calculo_detraccion.php" data-short="CD" title="Cálculo de detracción" class="<?= $paginaActiva === 'calculo_detraccion' ? 'activo' : '' ?>">Cálculo de detracción</a>
+            <?php endif; ?>
+            <?php if ($veSueldo): ?>
+                <button type="button" class="grupo-titulo grupo-toggle<?= $sueldoActivo ? ' activo' : '' ?>" id="toggle-sueldo" data-short="S" title="Sueldo" aria-expanded="true" aria-controls="submenu-sueldo">
+                    <span class="grupo-nombre">Sueldo</span><span class="flecha" aria-hidden="true">▾</span>
+                </button>
+                <div class="submenu" id="submenu-sueldo">
+                    <a href="sueldo.php" class="sub<?= $paginaActiva === 'sueldo' ? ' activo' : '' ?>">Planilla</a>
+                    <a href="sueldo_mantenimiento.php" class="sub<?= $paginaActiva === 'sueldo_mantenimiento' ? ' activo' : '' ?>">Mantenimiento de personal</a>
+                </div>
+                <script>
+                (function () {
+                    var b = document.getElementById('toggle-sueldo'), s = document.getElementById('submenu-sueldo');
+                    function set(abierto) {
+                        b.setAttribute('aria-expanded', abierto);
+                        s.hidden = !abierto;
+                        try { localStorage.setItem('menuSueldo', abierto ? '1' : '0'); } catch (e) {}
+                    }
+                    var g = null; try { g = localStorage.getItem('menuSueldo'); } catch (e) {}
+                    set(g !== '0' || <?= $sueldoActivo ? 'true' : 'false' ?>);
+                    b.addEventListener('click', function () { set(b.getAttribute('aria-expanded') !== 'true'); });
+                })();
+                </script>
             <?php endif; ?>
             <?php if ($veFlota): ?>
                 <button type="button" class="grupo-titulo grupo-toggle<?= $flotaActiva ? ' activo' : '' ?>" id="toggle-tractos-carretas" data-short="TC" title="Inventario de tractos y carretas" aria-expanded="true" aria-controls="submenu-tractos-carretas">

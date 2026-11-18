@@ -100,20 +100,55 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($foto = $qf->get_result()->fetch_column()) {
                 $archivos[] = $foto;
             }
-            $qc = $conexion->prepare("DELETE FROM personal_contratos WHERE personal_id = ?");
-            $qc->bind_param('i', $id);
-            $qc->execute();
-            // Elimina la ficha del personal
-            $s = $conexion->prepare("DELETE FROM personal WHERE id = ?");
-            $s->bind_param('i', $id);
-            $s->execute();
-            // Borra los archivos físicos solo si el nombre tiene el formato esperado
-            foreach ($archivos as $a) {
-                if (preg_match('/^[a-f0-9]{24}\.(pdf|jpg|png)$/', $a)) {
-                    @unlink(dirname(__DIR__) . '/Documentos_Personal/' . $a);
+            if (!$conexion->begin_transaction()) {
+                error_log('Extranet_SBC: no se pudo iniciar la eliminación de personal: ' . $conexion->error);
+                $err = 'No se pudo eliminar la ficha. Contacte al administrador.';
+            } else {
+                $qc = $conexion->prepare("DELETE FROM personal_contratos WHERE personal_id = ?");
+                if (!$qc) {
+                    $detalle = $conexion->error;
+                } else {
+                    $qc->bind_param('i', $id);
+                    $detalle = $qc->execute() ? '' : $qc->error;
+                    $qc->close();
+                }
+                if ($detalle === '') {
+                    $s = $conexion->prepare("DELETE FROM personal WHERE id = ?");
+                    if (!$s) {
+                        $detalle = $conexion->error;
+                    } else {
+                        $s->bind_param('i', $id);
+                        if (!$s->execute()) {
+                            $detalle = $s->error;
+                            if ($s->errno === 1451) {
+                                $err = 'No se puede eliminar la ficha porque tiene registros asociados, como datos de sueldo. Puedes dar de baja al trabajador.';
+                            }
+                        } elseif ($s->affected_rows !== 1) {
+                            $detalle = 'La ficha ya no existe.';
+                        }
+                        $s->close();
+                    }
+                }
+                if ($detalle !== '') {
+                    $conexion->rollback();
+                    error_log('Extranet_SBC: no se pudo eliminar la ficha de personal: ' . $detalle);
+                    if ($err === '') {
+                        $err = 'No se pudo eliminar la ficha. Contacte al administrador.';
+                    }
+                } elseif (!$conexion->commit()) {
+                    error_log('Extranet_SBC: no se pudo confirmar la eliminación de personal: ' . $conexion->error);
+                    $conexion->rollback();
+                    $err = 'No se pudo eliminar la ficha. Contacte al administrador.';
+                } else {
+                    // Borra los archivos solo después de confirmar la eliminación de la ficha.
+                    foreach ($archivos as $a) {
+                        if (preg_match('/^[a-f0-9]{24}\.(pdf|jpg|png)$/', $a)) {
+                            @unlink(dirname(__DIR__) . '/Documentos_Personal/' . $a);
+                        }
+                    }
+                    $ok = 'Ficha eliminada.';
                 }
             }
-            $ok = 'Ficha eliminada.';
         }
     }
     // Guarda el mensaje y redirige (patrón PRG) para evitar reenvíos del formulario
