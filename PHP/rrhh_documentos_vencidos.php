@@ -96,7 +96,7 @@ foreach ($filas as &$fila) {
         $fechaFinContrato = fechaDocumentoDisponible($usaContratoTabla ? $fila['tabla_contrato_fin'] : $fila['personal_contrato_fin']);
         $periodoInicioContrato = fechaDocumentoDisponible($usaContratoTabla ? $fila['tabla_periodo_inicio'] : $fila['personal_periodo_inicio']);
         $contratoTieneDatos = trim($tipoContrato) !== '' || $fechaInicioContrato !== '' || $fechaFinContrato !== '' || $periodoInicioContrato !== '';
-        if ($contratoTieneDatos) {
+        if ($contratoTieneDatos && $fechaInicioRaw === '' && $fechaVencimientoRaw === '' && empty($fila['sin_vencimiento'])) {
             $fechaInicioRaw = $fechaInicioContrato;
             $fechaVencimientoRaw = $fechaFinContrato;
             $fila['sin_vencimiento'] = $fechaFinContrato === '' ? 1 : 0;

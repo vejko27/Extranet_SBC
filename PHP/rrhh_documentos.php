@@ -253,7 +253,7 @@ foreach ($docs as &$doc) {
         $doc['fecha_vencimiento'] = $fechaVencimientoDocumento;
         $doc['sin_vencimiento'] = 0;
     } elseif ($doc['tipo'] === 'Contrato') {
-        if ($contratoTieneDatos) {
+        if ($contratoTieneDatos && $doc['fecha_inicio'] === '' && $doc['fecha_vencimiento'] === '' && empty($doc['sin_vencimiento'])) {
             $doc['fecha_inicio'] = $fechaInicioContrato;
             $doc['fecha_vencimiento'] = $fechaFinContrato;
             $doc['sin_vencimiento'] = $fechaFinContrato === '' ? 1 : 0;
