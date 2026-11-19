@@ -282,10 +282,13 @@ function clase($v) {
         'HOMOLOGADO' => 'b-hom', 'PENDIENTE' => 'b-pen', default => ''
     };
 }
+function etiquetaProveedor($valor) {
+    return $valor === 'NO APLICA' ? 'N/A' : $valor;
+}
 // Imprime las <option> de un select marcando la seleccionada
 function opciones($filas, $sel = '') {
     foreach ($filas as $o) {
-        $etiqueta = $o === '' ? 'Por completar' : $o;
+        $etiqueta = $o === '' ? 'Por completar' : etiquetaProveedor($o);
         echo '<option value="' . e($o) . '"' . ($o === $sel ? ' selected' : '') . '>' . e($etiqueta) . '</option>';
     }
 }
@@ -303,7 +306,7 @@ function celdaSelect($etiqueta, $campo, $opts, $p, $editable) {
         opciones($opts, $p[$campo]);
         echo '</select></form>';
     } else {
-        echo e($p[$campo]);
+        echo e(etiquetaProveedor($p[$campo]));
     }
     echo '</td>';
 }
@@ -718,6 +721,9 @@ require __DIR__ . '/layout_inicio.php';
     ];
     function textoCampoProveedor(proveedor, campo) {
         let texto = proveedor[campo] || "";
+        if (["acuerdo_seguridad", "ddjj", "filtros_aplicados"].includes(campo) && texto === "NO APLICA") {
+            texto = "N/A";
+        }
         if (campo === "moneda_detracciones" && (texto || proveedor.banco_detracciones || proveedor.cuenta_detracciones)) {
             texto = "S/. Soles";
         } else if (campo.startsWith("moneda_") && texto) {
