@@ -186,6 +186,7 @@ require __DIR__ . '/layout_inicio.php';
             </select>
         </label>
         <button type="button" class="btn-sec" id="filtrar-documentos-proximos" aria-pressed="false">Próximo a vencer</button>
+        <button type="button" class="btn-sec" id="filtrar-documentos-vencidos" aria-pressed="false">Solo vencidos</button>
         <button type="button" class="btn-sec" id="alternar-colores-documentos" aria-pressed="true" title="Activar o desactivar los colores de estado">Color</button>
     </div>
     <p class="contratos-contador" id="contador-documentos" aria-live="polite"></p>
@@ -251,17 +252,18 @@ require __DIR__ . '/layout_inicio.php';
         const trabajador = document.getElementById("filtro-trabajador");
         const unidad = document.getElementById("filtro-unidad");
         const proximos = document.getElementById("filtrar-documentos-proximos");
+        const vencidos = document.getElementById("filtrar-documentos-vencidos");
         const colores = document.getElementById("alternar-colores-documentos");
         const sinResultados = document.getElementById("documentos-sin-resultados");
         const contador = document.getElementById("contador-documentos");
-        let soloProximos = false;
+        let filtroEstado = "";
 
         const actualizar = () => {
             let visibles = 0;
             filas.forEach((fila) => {
                 const coincideTrabajador = trabajador.value === "" || fila.dataset.trabajador === trabajador.value;
                 const coincideUnidad = unidad.value === "" || fila.dataset.unidad === unidad.value;
-                const coincideEstado = !soloProximos || fila.dataset.estado === "por-vencer";
+                const coincideEstado = filtroEstado === "" || fila.dataset.estado === filtroEstado;
                 fila.hidden = !coincideTrabajador || !coincideUnidad || !coincideEstado;
                 if (!fila.hidden) visibles++;
             });
@@ -277,12 +279,15 @@ require __DIR__ . '/layout_inicio.php';
 
         trabajador.addEventListener("change", actualizar);
         unidad.addEventListener("change", actualizar);
-        proximos.addEventListener("click", () => {
-            soloProximos = !soloProximos;
-            proximos.setAttribute("aria-pressed", String(soloProximos));
-            proximos.textContent = soloProximos ? "Ver todos" : "Próximo a vencer";
+        const alternarEstado = (estado) => {
+            filtroEstado = filtroEstado === estado ? "" : estado;
+            proximos.setAttribute("aria-pressed", String(filtroEstado === "por-vencer"));
+            proximos.textContent = filtroEstado === "por-vencer" ? "Ver todos" : "Próximo a vencer";
+            vencidos.setAttribute("aria-pressed", String(filtroEstado === "vencido"));
             actualizar();
-        });
+        };
+        proximos.addEventListener("click", () => alternarEstado("por-vencer"));
+        vencidos.addEventListener("click", () => alternarEstado("vencido"));
         colores.addEventListener("click", () => {
             const activar = colores.getAttribute("aria-pressed") !== "true";
             colores.setAttribute("aria-pressed", String(activar));
