@@ -86,10 +86,7 @@ foreach ($filas as &$fila) {
     $fila['fecha_fin_obj'] = fechaContrato($fechaFinRaw);
     $fila['dias_disponibles'] = null;
 
-    $tieneContrato = trim((string)$fila['tipo_contrato']) !== ''
-        || $fila['fecha_inicio_obj'] !== null
-        || $fila['fecha_fin_obj'] !== null
-        || trim((string)($fila['periodo_inicio'] ?? '')) !== '';
+    $tieneContrato = $fila['fecha_inicio_obj'] !== null || $fila['fecha_fin_obj'] !== null;
 
     if (!$tieneContrato) {
         $fila['estado_key'] = 'sin-contrato';
