@@ -18,6 +18,10 @@ if ($veProveedores) $tarjetas[] = ['proveedores.php', 'Proveedores', 'Listado de
 if ($veDetraccion)  $tarjetas[] = ['calculo_detraccion.php', 'Cálculo de detracción', 'Prepara los datos para el cálculo de detracción.'];
 if ($veRRHH)        $tarjetas[] = ['rrhh.php', 'Recursos Humanos', 'Fichas de datos del personal.'];
 if ($veSueldo)      $tarjetas[] = ['sueldo.php', 'Mundo Sueldos', 'Consulta la planilla de remuneraciones.'];
+if ($veMuebles)   $tarjetas[] = ['activos_muebles.php', 'Activos - Muebles', 'Consulta el cuadro de depreciación de muebles y enseres.'];
+if ($veEquiposComputo) $tarjetas[] = ['activos_computo.php', 'Activos - Equipos de Cómputo', 'Consulta el cuadro de depreciación de equipos de cómputo.'];
+if ($veEquiposDiversos) $tarjetas[] = ['activos_diversos.php', 'Activos - Equipos Diversos', 'Consulta el cuadro de depreciación de equipos diversos.'];
+if ($veMonitores) $tarjetas[] = ['activos_monitores.php', 'Activos - Monitores', 'Consulta el cuadro de depreciación de monitores.'];
 ?>
 
 <?php /* Saludo al usuario en sesión */ ?>

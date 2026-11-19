@@ -16,8 +16,13 @@ $veSueldo = puede('Sueldo', 'ver');
 $veDetraccion = puede('Cálculo de detracción', 'ver');
 $veTractos = puede('Tractos', 'ver');
 $veCarretas = puede('Carretas', 'ver');
+$veMuebles = puede('Muebles', 'ver');
+$veEquiposComputo = puede('Equipos de Cómputo', 'ver');
+$veEquiposDiversos = puede('Equipos Diversos', 'ver');
+$veMonitores = puede('Monitores', 'ver');
 $veFlota = $veTractos || $veCarretas;
 $flotaActiva = in_array($paginaActiva, ['flota_inicio', 'tractos', 'carretas', 'lavados', 'mantenimiento_tractos', 'programacion_flota'], true);
+$activosActivo = in_array($paginaActiva, ['activos_muebles', 'activos_computo', 'activos_diversos', 'activos_monitores'], true);
 $rrhhActivo = in_array($paginaActiva, ['rrhh', 'rrhh_contratos', 'rrhh_documentos_vencidos', 'rrhh_boletas'], true);
 $sueldoActivo = in_array($paginaActiva, ['sueldo', 'sueldo_mantenimiento'], true);
 // Lista de manuales y manual activo (solo en la página de manuales)
@@ -130,6 +135,38 @@ $formatoActivo = $paginaActiva === 'formatos_procedimientos' && isset($_GET['m']
                     }
                     var g = null; try { g = localStorage.getItem('menuFlota'); } catch (e) {}
                     set(g !== '0' || <?= $flotaActiva ? 'true' : 'false' ?>);
+                    b.addEventListener('click', function () { set(b.getAttribute('aria-expanded') !== 'true'); });
+                })();
+                </script>
+            <?php endif; ?>
+            <?php if ($veMuebles || $veEquiposComputo || $veEquiposDiversos || $veMonitores): ?>
+                <button type="button" class="grupo-titulo grupo-toggle<?= $activosActivo ? ' activo' : '' ?>" id="toggle-activos" data-short="AC" title="Activos" aria-expanded="true" aria-controls="submenu-activos">
+                    <span class="grupo-nombre">Activos</span><span class="flecha" aria-hidden="true">▾</span>
+                </button>
+                <div class="submenu" id="submenu-activos">
+                    <?php if ($veMuebles): ?>
+                        <a href="activos_muebles.php" class="sub<?= $paginaActiva === 'activos_muebles' ? ' activo' : '' ?>">Muebles</a>
+                    <?php endif; ?>
+                    <?php if ($veEquiposComputo): ?>
+                        <a href="activos_computo.php" class="sub<?= $paginaActiva === 'activos_computo' ? ' activo' : '' ?>">Equipos de Cómputo</a>
+                    <?php endif; ?>
+                    <?php if ($veEquiposDiversos): ?>
+                        <a href="activos_diversos.php" class="sub<?= $paginaActiva === 'activos_diversos' ? ' activo' : '' ?>">Equipos Diversos</a>
+                    <?php endif; ?>
+                    <?php if ($veMonitores): ?>
+                        <a href="activos_monitores.php" class="sub<?= $paginaActiva === 'activos_monitores' ? ' activo' : '' ?>">Monitores</a>
+                    <?php endif; ?>
+                </div>
+                <script>
+                (function () {
+                    var b = document.getElementById('toggle-activos'), s = document.getElementById('submenu-activos');
+                    function set(abierto) {
+                        b.setAttribute('aria-expanded', abierto);
+                        s.hidden = !abierto;
+                        try { localStorage.setItem('menuActivos', abierto ? '1' : '0'); } catch (e) {}
+                    }
+                    var g = null; try { g = localStorage.getItem('menuActivos'); } catch (e) {}
+                    set(g !== '0' || <?= $activosActivo ? 'true' : 'false' ?>);
                     b.addEventListener('click', function () { set(b.getAttribute('aria-expanded') !== 'true'); });
                 })();
                 </script>
