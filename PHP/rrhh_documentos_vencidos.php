@@ -1,6 +1,6 @@
 <?php
 $paginaActiva = 'rrhh_documentos_vencidos';
-$tituloPagina = 'Documentos vencidos';
+$tituloPagina = 'Control de documentos';
 require_once __DIR__ . '/auth.php';
 require __DIR__ . '/bd_conexion.php';
 require_once __DIR__ . '/rrhh_campos_extra.php';
@@ -149,7 +149,7 @@ require __DIR__ . '/layout_inicio.php';
 <div class="cabecera-marca">
     <img class="logo-marca" src="../logo/SBC_TRANSPORT.jpg" alt="SMART Transporte de Carga Pesada">
     <div>
-        <h1>Documentos vencidos</h1>
+        <h1>Control de documentos</h1>
         <p class="subtitulo">Seguimiento de vigencia de los documentos del personal.</p>
     </div>
 </div>
