@@ -215,12 +215,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         unset($fila);
     } elseif ($accion === 'eliminar') {
-        if ($tipoActivo === 'monitores') {
-            $seleccion = isset($_POST['filas_borrar_json'])
-                ? (is_string($_POST['filas_borrar_json']) ? json_decode($_POST['filas_borrar_json'], true) : null)
-                : ($_POST['filas_borrar'] ?? null);
+        if (isset($_POST['filas_borrar_json'])) {
+            $seleccion = is_string($_POST['filas_borrar_json']) ? json_decode($_POST['filas_borrar_json'], true) : null;
+        } elseif (isset($_POST['filas_borrar'])) {
+            $seleccion = $_POST['filas_borrar'];
+        } elseif (isset($_POST['fila'])) {
+            $seleccion = [$_POST['fila']];
         } else {
-            $seleccion = [$_POST['fila'] ?? null];
+            $seleccion = null;
         }
         if (!is_array($seleccion) || !$seleccion || count($seleccion) > count($filas)) {
             http_response_code(400);
@@ -341,7 +343,7 @@ require __DIR__ . '/layout_inicio.php';
                     <?php if ($puedeCrear): ?><a class="btn" href="<?= activosEscapar($activo['ruta']) ?>?agregar=1#agregar-mueble">Agregar</a><?php endif; ?>
                     <?php if ($puedeEditar && !empty($filas)): ?><a class="btn" href="<?= activosEscapar($activo['ruta']) ?>?editar=1">Editar</a><?php endif; ?>
                     <?php if ($puedeEliminar && !empty($filas)): ?>
-                    <form method="post" id="formulario-borrar-mueble"<?= $tipoActivo === 'monitores' ? ' data-seleccion-multiple' : ' onsubmit="return confirm(\'¿Eliminar la fila seleccionada? Esta acción no se puede deshacer.\');"' ?>>
+                    <form method="post" id="formulario-borrar-mueble" data-seleccion-multiple>
                         <input type="hidden" name="csrf" value="<?= activosEscapar($_SESSION['csrf']) ?>">
                         <input type="hidden" name="version" value="<?= $version ?>">
                         <input type="hidden" name="accion" value="eliminar">
@@ -433,7 +435,7 @@ require __DIR__ . '/layout_inicio.php';
         <input type="hidden" name="version" value="<?= $version ?>">
         <input type="hidden" name="accion" value="editar">
     <?php elseif ($puedeEliminar && !$agregando): ?>
-    <p class="activos-ayuda"><?= $tipoActivo === 'monitores' ? 'Selecciona una o varias filas' : 'Selecciona una fila' ?> en la columna N° y pulsa Borrar.</p>
+    <p class="activos-ayuda">Selecciona una o varias filas en la columna N° y pulsa Borrar.</p>
     <?php endif; ?>
     <div class="tabla-wrap activos-tabla-wrap">
         <table class="activos-tabla<?= $tipoActivo !== 'muebles' ? ' activos-tabla-computo' : '' ?><?= $editando ? ' activos-tabla-edicion' : ($puedeEliminar && !$agregando ? ' activos-tabla-seleccion' : '') ?>">
@@ -475,7 +477,7 @@ require __DIR__ . '/layout_inicio.php';
                                     <?php endif; ?>
                                 <?php elseif ($campo === 0 && $puedeEliminar && !$agregando): ?>
                                     <label class="activos-seleccion">
-                                        <input type="<?= $tipoActivo === 'monitores' ? 'checkbox' : 'radio' ?>" name="<?= $tipoActivo === 'monitores' ? 'filas_borrar[]' : 'fila' ?>" value="<?= $i ?>" form="formulario-borrar-mueble" aria-label="Seleccionar fila <?= activosEscapar($fila[0]) ?>"<?= $tipoActivo === 'monitores' ? '' : ' required' ?>>
+                                        <input type="checkbox" name="filas_borrar[]" value="<?= $i ?>" form="formulario-borrar-mueble" aria-label="Seleccionar fila <?= activosEscapar($fila[0]) ?>">
                                         <span><?= activosEscapar($fila[0]) ?></span>
                                     </label>
                                 <?php else: ?>
@@ -501,7 +503,7 @@ require __DIR__ . '/layout_inicio.php';
     <?php if ($editando): ?>
     </form>
     <?php endif; ?>
-    <?php if ($editando || ($tipoActivo === 'monitores' && $puedeEliminar && !$agregando)): ?>
+    <?php if ($editando || ($puedeEliminar && !$agregando)): ?>
     <script src="../JS/activos_muebles.js?v=<?= filemtime(dirname(__DIR__) . '/JS/activos_muebles.js') ?>"></script>
     <?php endif; ?>
     <?php endif; ?>

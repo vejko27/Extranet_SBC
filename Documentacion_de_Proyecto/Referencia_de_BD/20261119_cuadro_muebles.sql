@@ -1,7 +1,7 @@
 -- Ejecutar una sola vez antes de usar la edición del cuadro de muebles.
 -- Los importes y datos de compra agrupados se conservan una sola vez.
 -- Gestionar Ver, Crear, Editar y Eliminar del módulo Muebles desde Gestión de permisos.
--- Borrar elimina solamente la fila seleccionada y conserva los datos de compra compartidos.
+-- Borrar permite seleccionar una o varias filas y conserva los datos de compra compartidos.
 -- Las filas nuevas pueden quedar sin clasificar y completarse posteriormente.
 -- El estado admite En Uso y Dado de Baja; los valores anteriores se conservan hasta modificarlos.
 SET NAMES utf8mb4;

@@ -2,6 +2,7 @@
 -- Gestionar Ver, Crear, Editar y Eliminar del módulo desde Gestión de permisos.
 -- No se otorga acceso a otros roles; el Administrador siempre tiene acceso.
 -- Las dos primeras filas comparten datos de compra y estado; se conservan al borrar la primera.
+-- Borrar permite seleccionar una o varias filas.
 -- El estado admite En Uso y Dado de Baja; los valores anteriores se conservan hasta modificarlos.
 SET NAMES utf8mb4;
 

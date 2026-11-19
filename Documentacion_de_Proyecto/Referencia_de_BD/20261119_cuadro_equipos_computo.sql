@@ -1,6 +1,7 @@
 -- Ejecutar una sola vez antes de habilitar el cuadro de equipos de cómputo.
 -- Gestionar Ver, Crear, Editar y Eliminar del módulo desde Gestión de permisos.
 -- No se otorga acceso a otros roles; el Administrador siempre tiene acceso.
+-- Borrar permite seleccionar una o varias filas.
 -- El estado admite En Uso y Dado de Baja; los valores anteriores se conservan hasta modificarlos.
 SET NAMES utf8mb4;
 
